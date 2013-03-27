@@ -28,5 +28,16 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
+menu :: Char -> IO ()
+menu '1' = putStrLn "Commençons une partie !"
+menu '2' = putStrLn "Voyons vos meilleurs scores !"
+menu c = putStrLn ("Le choix '" ++ [c] ++ "' n'existe pas !")
+
 main :: IO ()
-main = putStrLn "Bonsoir !"
+main = do
+         putStrLn "Bonsoir ! Que voulez-vous faire ?"
+	 putStrLn "1 : Nouvelle partie"
+	 putStrLn "2 : Voir les meilleurs scores"
+	 choice <- getChar
+	 menu choice
+
