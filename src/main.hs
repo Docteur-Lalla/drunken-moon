@@ -38,6 +38,11 @@ main = do
          putStrLn "Bonsoir ! Que voulez-vous faire ?"
 	 putStrLn "1 : Nouvelle partie"
 	 putStrLn "2 : Voir les meilleurs scores"
+ 	 putStrLn "3 : Quitter"
 	 choice <- getChar
-	 menu choice
+	 if (choice == '3')
+	 	then return ()
+	 	else do
+	 		menu choice
+			main
 
