@@ -46,9 +46,9 @@ main = do
 	 putStrLn "2 : Voir les meilleurs scores"
 	 putStrLn "3 : Quitter"
 	 choice <- getChar
-	 if (choice == '3')
-	   return ()
-	 else
-	   menu choice
-	   main
-
+	 putStrLn ("'" ++ [choice] ++ "'")
+	 if choice == '3'
+	   then return ()
+	   else do
+	          menu choice
+		  main
