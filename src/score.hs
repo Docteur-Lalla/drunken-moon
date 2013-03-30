@@ -30,10 +30,24 @@
 
 module Score (showScores) where
 
-getScoreLines :: String
-getScoreLines = "Score affiché."
+import qualified Data.ByteString as BS
+import Data.ByteString.Char8 as BSC
+
+-- Ouvre le fichier rc/score et y lit les scores. La ByteString obtenue est coupée à chaque retour à la ligne.
+
+getScoreLines :: IO [BS.ByteString]
+getScoreLines = do
+		  contents <- BS.readFile "rc/score"
+		  return (BSC.split '\n' contents)
+
+-- Affiche les scores enregistrés.
 
 showScores :: IO ()
 showScores = do
-               lines <- return getScoreLines
-	       putStrLn lines
+               lines <- getScoreLines
+	       print lines
+	       
+	       where print []     = return ()
+	             print (x:xs) = do
+		                      BSC.putStrLn x
+				      print xs

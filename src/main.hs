@@ -31,8 +31,6 @@
 import Score
 import Game
 
-module Main (main) where
-
 -- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
 
 menu :: String -> IO ()
