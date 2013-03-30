@@ -1,4 +1,4 @@
-ghc -o bin/drunken-moon src/main.hs
+ghc -o bin/drunken-moon src/*.hs
 
 rm src/*.hi
 rm src/*.o

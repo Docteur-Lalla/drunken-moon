@@ -28,27 +28,44 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-import Score
-import Game
+module Game (newGame) where
 
--- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
+-- Fonction getDifficulty demandant la difficulté au joueur.
 
-menu :: Char -> IO ()
-menu '1' = Game.newGame
-menu '2' = Score.showScores
-menu c = putStrLn ("Le choix '" ++ [c] ++ "' n'existe pas !")
+getDifficulty :: IO (Maybe Int)
+getDifficulty = do
+                  putStrLn "Quel mode choisissez-vous ?"
+		  putStrLn "1 : Facile"
+		  putStrLn "2 : Normal"
+		  putStrLn "3 : Difficile"
+		  putStrLn "4 : Lunatique"
+		  putStrLn "5 : Extra"
+                  c <- getChar
+		  return (analyze c)
 
--- Fonction main servant de point de départ au programme.
+-- Conversion du caractère en Maybe Int (Int si correct ou Nothing s'il y a erreur).
 
-main = do
-         putStrLn "Bonsoir ! Que voulez-vous faire ?"
-	 putStrLn "1 : Nouvelle partie"
-	 putStrLn "2 : Voir les meilleurs scores"
-	 putStrLn "3 : Quitter"
-	 choice <- getChar
-	 if (choice == '3')
-	   return ()
-	 else
-	   menu choice
-	   main
+analyze :: Char -> Maybe Int
+analyze '1' = Just 0
+analyze '2' = Just 1
+analyze '3' = Just 2
+analyze '4' = Just 3
+analyze '5' = Just 4
+analyze _ = Nothing
 
+-- Conversion de Maybe Int vers String.
+
+stringOfDiff :: Maybe Int -> String
+stringOfDiff (Just 0) = "Easy"
+stringOfDiff (Just 1) = "Normal"
+stringOfDiff (Just 2) = "Hard"
+stringOfDiff (Just 3) = "Lunatic"
+stringOfDiff (Just 4) = "Extra"
+stringOfDiff Nothing = "Undefined"
+
+-- Crée une partie.
+
+newGame :: IO ()
+newGame = do
+            difficulty <- getDifficulty
+	    putStrLn ("Vous jouez en mode " ++ (stringOfDiff $ difficulty) ++ ".")

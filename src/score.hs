@@ -28,27 +28,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-import Score
-import Game
+module Score (showScores) where
 
--- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
+getScoreLines :: String
+getScoreLines = "Score affiché."
 
-menu :: Char -> IO ()
-menu '1' = Game.newGame
-menu '2' = Score.showScores
-menu c = putStrLn ("Le choix '" ++ [c] ++ "' n'existe pas !")
-
--- Fonction main servant de point de départ au programme.
-
-main = do
-         putStrLn "Bonsoir ! Que voulez-vous faire ?"
-	 putStrLn "1 : Nouvelle partie"
-	 putStrLn "2 : Voir les meilleurs scores"
-	 putStrLn "3 : Quitter"
-	 choice <- getChar
-	 if (choice == '3')
-	   return ()
-	 else
-	   menu choice
-	   main
-
+showScores :: IO ()
+showScores = do
+               lines <- return getScoreLines
+	       putStrLn lines
