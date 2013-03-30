@@ -33,10 +33,10 @@ import Game
 
 -- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
 
-menu :: Char -> IO ()
-menu '1' = Game.newGame
-menu '2' = Score.showScores
-menu c = putStrLn ("Le choix '" ++ [c] ++ "' n'existe pas !")
+menu :: String -> IO ()
+menu "1" = Game.newGame
+menu "2" = Score.showScores
+menu c = putStrLn ("Le choix '" ++ c ++ "' n'existe pas !")
 
 -- Fonction main servant de point de départ au programme.
 
@@ -45,8 +45,8 @@ main = do
 	 putStrLn "1 : Nouvelle partie"
 	 putStrLn "2 : Voir les meilleurs scores"
 	 putStrLn "3 : Quitter"
-	 choice <- getChar
-	 if choice == '3'
+	 choice <- getLine
+	 if choice == "3"
 	   then return ()
 	   else do
 	          menu choice

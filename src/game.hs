@@ -40,17 +40,17 @@ getDifficulty = do
 		  putStrLn "3 : Difficile"
 		  putStrLn "4 : Lunatique"
 		  putStrLn "5 : Extra"
-                  c <- getChar
+                  c <- getLine
 		  return (analyze c)
 
--- Conversion du caractère en Maybe Int (Int si correct ou Nothing s'il y a erreur).
+-- Conversion de la String en Maybe Int (Int si correct ou Nothing s'il y a erreur).
 
-analyze :: Char -> Maybe Int
-analyze '1' = Just 0
-analyze '2' = Just 1
-analyze '3' = Just 2
-analyze '4' = Just 3
-analyze '5' = Just 4
+analyze :: String -> Maybe Int
+analyze "1" = Just 0
+analyze "2" = Just 1
+analyze "3" = Just 2
+analyze "4" = Just 3
+analyze "5" = Just 4
 analyze _ = Nothing
 
 -- Conversion de Maybe Int vers String.
