@@ -28,7 +28,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Score (showScores) where
+module Score (showScores, writeScore) where
 
 import qualified Data.ByteString as BS
 import Data.ByteString.Char8 as BSC
@@ -51,3 +51,8 @@ showScores = do
 	             print (x:xs) = do
 		                      BSC.putStrLn x
 				      print xs
+
+-- Enregistre un nouveau score.
+
+writeScore :: Int -> IO ()
+writeScore n = Prelude.putStrLn "Nyu !"

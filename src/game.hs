@@ -30,6 +30,8 @@
 
 module Game (newGame) where
 
+import Score (writeScore)
+
 -- Fonction getDifficulty demandant la difficulté au joueur.
 
 getDifficulty :: IO (Maybe Int)
@@ -69,3 +71,6 @@ newGame :: IO ()
 newGame = do
             difficulty <- getDifficulty
 	    putStrLn ("Vous jouez en mode " ++ (stringOfDiff $ difficulty) ++ ".")
+	    putStrLn "Admettons, vous avez fait une bonne partie. Entrez un score :"
+	    scoreStr <- getLine
+	    Score.writeScore (read scoreStr)
