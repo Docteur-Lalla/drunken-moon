@@ -28,9 +28,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Game (newGame) where
+module Game (newGame, loop) where
 
 import Score (writeScore)
+
+import System.Exit
+import Graphics.UI.SDL as SDL
 
 -- Fonction getDifficulty demandant la difficulté au joueur.
 
@@ -74,3 +77,18 @@ newGame = do
 	    putStrLn "Admettons, vous avez fait une bonne partie. Entrez un score :"
 	    scoreStr <- getLine
 	    Score.writeScore (read scoreStr)
+
+-- Boucle principale de l'application graphique.
+
+loop :: Surface -> IO ()
+loop screen = do
+                event <- waitEvent
+		case event of
+		  Quit -> exitWith ExitSuccess
+		  KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
+		  KeyDown (Keysym _ _ key) -> manageKey key
+		  _			   -> return ()
+		SDL.flip screen
+		loop screen
+
+		where manageKey key = return ()

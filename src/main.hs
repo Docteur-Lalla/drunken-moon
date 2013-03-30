@@ -31,6 +31,8 @@
 import Score
 import Game
 
+import Graphics.UI.SDL as SDL
+
 -- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
 
 menu :: String -> IO ()
@@ -39,7 +41,7 @@ menu "2" = Score.showScores
 menu c = putStrLn ("Le choix '" ++ c ++ "' n'existe pas !")
 
 -- Fonction main servant de point de départ au programme.
-
+{-
 main = do
          putStrLn "Bonsoir ! Que voulez-vous faire ?"
 	 putStrLn "1 : Nouvelle partie"
@@ -51,3 +53,10 @@ main = do
 	   else do
 	          menu choice
 		  main
+-}
+main = withInit [InitVideo] $
+          do
+	    screen <- SDL.setVideoMode 480 640 32 [HWSurface]
+	    SDL.setCaption "Drunken Moon" "Drunken Moon"
+	    enableUnicode True
+	    Game.loop screen
