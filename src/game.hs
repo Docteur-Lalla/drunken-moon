@@ -34,6 +34,7 @@ import Score (writeScore)
 
 import System.Exit
 import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.TTF as TTF
 
 -- Fonction getDifficulty demandant la difficulté au joueur.
 
@@ -88,7 +89,16 @@ loop screen = do
 		  KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
 		  KeyDown (Keysym _ _ key) -> manageKey key
 		  _			   -> return ()
+		display screen
 		SDL.flip screen
 		loop screen
 
 		where manageKey key = return ()
+
+		      display screen = do
+		                         font <- TTF.openFont dejavu 9
+					 text <- TTF.renderTextSolid font "Voici Drunken Moon" color
+					 SDL.blitSurface text Nothing screen (Just (Rect 350 0 500 640))
+
+					 where color = Color 0xFF 0xFF 0xFF
+					       dejavu = "/usr/share/fonts/TTF/DejaVuSerif.ttf"

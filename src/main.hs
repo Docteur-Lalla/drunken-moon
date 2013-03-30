@@ -32,6 +32,7 @@ import Score
 import Game
 
 import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.TTF as TTF
 
 -- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
 
@@ -56,7 +57,12 @@ main = do
 -}
 main = withInit [InitVideo] $
           do
-	    screen <- SDL.setVideoMode 480 640 32 [HWSurface]
-	    SDL.setCaption "Drunken Moon" "Drunken Moon"
-	    enableUnicode True
-	    Game.loop screen
+	    ttf <- TTF.init
+	    case ttf of
+	      False -> putStrLn "SDL_TTF cannot be initialized."
+	      True -> do
+	                screen <- SDL.setVideoMode 500 640 32 [HWSurface]
+	                SDL.setCaption "Drunken Moon" "Drunken Moon"
+	                enableUnicode True
+	                Game.loop screen
+			TTF.quit
