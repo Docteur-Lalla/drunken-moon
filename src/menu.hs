@@ -28,14 +28,24 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Menu (loop) where
+module Menu where
 
 import Font
+import Score
+import Game
 
 import System.Exit
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Image as IMG
 import Graphics.UI.SDL.TTF as TTF
+
+{- 
+Cré l'environnement du menu
+	* screen définit la fenètre
+	* choice définit le choix de l'utilisateur
+	* select "l'image" du sélecteur
+-}
+data Env = MenuEnv { screen :: Surface, choice :: Int, select :: Rect }
 
 title :: Surface -> IO ()
 title screen = do
@@ -49,25 +59,56 @@ title screen = do
 
 		 where color = Color 0x00 0x00 0x00
 		       rect = Rect 150 30 500 640
+		      
+		      
+{-		      
+	Display effectué en premier pour la récursion terminale,
+	les 'return ()' sont remplacés par des reloop (rappel avec même Env)
+	les autres cas sont des 'loop $ (nouvel Env)'
+		ou des appels d'autres étapes (zb: 'Score.showScores screen')
+		
+	revenir de Scores à Menu, ou quitter le menu reviendrait à envoyer 'return ()'
+-}
+loop :: Env -> IO ()
+loop (MenuEnv screen choice select) = do
 
-loop :: Surface -> IO ()
-loop screen = do
-                event <- waitEvent
-		case event of
-		  Quit -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ key) -> manageKey key
-		  _			   -> return ()
 		display screen
 		SDL.flip screen
-		loop screen
+		
+		event <- waitEvent
+		case event of
+		  Quit -> exitWith ExitSuccess
+		  KeyDown (Keysym _ _ 'q') -> return ()
+		  KeyDown (Keysym sym _ _) -> manageKey sym
+		  _			   -> reloop
 
-		where manageKey key = return ()
+		where 
+			manageKey key = case key of
+					SDLK_DOWN -> if (choice > 2)
+								then reloop
+								else loop $ MenuEnv screen (choice+1) (moveDown select)
+					SDLK_UP   -> if (choice < 0)
+								then reloop
+								else loop $ MenuEnv screen (choice-1) (moveUp select)
+					SDLK_RETURN -> case choice of
+									0 -> do 
+										Game.newGame
+										reloop
+									1 -> do
+										Score.showScores screen
+										reloop
+									2 -> return ()									
+					_            -> reloop
+				
+					where
+						moveDown (Rect x y w h) = Rect x (y+30) w h
+						moveUp (Rect x y w h) = Rect x (y-30) w h
 
-		      display screen = do
-					 suika <- IMG.load "rc/images/Suika.jpeg"
+			display screen = do
+					 suika <- IMG.load "../rc/images/Suika.jpeg"
 					 SDL.fillRect screen Nothing pixel
 					 SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+					 SDL.fillRect screen (Just select) (Pixel 0x000000)
 
 					 title screen
 
@@ -75,3 +116,5 @@ loop screen = do
 					       pixel = Pixel 0xFFFFFF
 					       x = 500 - 333
 					       y = 640 - 327
+
+			reloop = loop $ MenuEnv screen choice select

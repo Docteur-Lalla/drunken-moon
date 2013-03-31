@@ -30,6 +30,11 @@
 
 module Score (showScores, writeScore) where
 
+import Font
+import System.Exit
+import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.TTF as TTF
+import Graphics.UI.SDL.Image as IMG
 import qualified Data.ByteString as BS
 import Data.ByteString.Char8 as BSC
 
@@ -37,21 +42,63 @@ import Data.ByteString.Char8 as BSC
 
 getScoreLines :: IO [BS.ByteString]
 getScoreLines = do
-		  contents <- BS.readFile "rc/score"
+		  contents <- BS.readFile "../rc/score"
 		  return (BSC.split '\n' contents)
-
+		  
+		  
+		  
 -- Affiche les scores enregistrés.
 
-showScores :: IO ()
-showScores = do
-               lines <- getScoreLines
-	       print lines
-	       
-	       where print []     = return ()
-	             print (x:xs) = do
-		                      BSC.putStrLn x
-				      print xs
+showScores :: Surface -> IO ()
+showScores screen = do
 
+		display screen
+		SDL.flip screen
+		
+		evt <- SDL.waitEvent
+		case evt of
+			Quit                     -> return ()
+			KeyDown (Keysym sym _ _) -> manageKey sym
+			_                        -> reloop
+		
+		where
+			reloop = showScores screen
+			
+			manageKey key =
+				case key of
+					SDLK_q -> return ()
+					_   -> reloop
+					
+			display screen = do
+				lines <- getScoreLines
+				suika <- IMG.load "../rc/images/Suika.jpeg"
+				SDL.fillRect screen Nothing pixel
+				SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+				font <- Font.dejavu 15
+				text <- TTF.renderTextBlended font "** SCORES **" noir
+				SDL.blitSurface text Nothing screen (Just (Rect 180 130 0 0))
+				forEach lines dispLine 0
+				
+				where
+					pixel = Pixel 0xFFFFFF
+					
+					x = 500 - 333
+					y = 640 - 327
+					
+					forEach [] _ _     = return ()
+					forEach (x:xs) f i = do
+						f x i
+						forEach xs f (i+1)
+					
+					dispLine l i = do
+						font <- Font.dejavu 9
+						text <- TTF.tryRenderTextBlended font (unpack l) noir
+						case text of
+							Nothing -> return ()
+							Just t  -> do
+								SDL.blitSurface t Nothing screen (Just (Rect 150 (150+i*10) 0 0))
+								return ()
+						
 -- Enregistre un nouveau score.
 
 writeScore :: Int -> IO ()

@@ -35,50 +35,19 @@ import Menu
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 
--- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
-
-menu :: String -> IO ()
-menu "1" = Game.newGame
-menu "2" = Score.showScores
-menu c = putStrLn ("Le choix '" ++ c ++ "' n'existe pas !")
-
--- Fonction main servant de point de départ au programme.
-<<<<<<< HEAD
-{-
-main = do
-         putStrLn "Bonsoir ! Que voulez-vous faire ?"
-	 putStrLn "1 : Nouvelle partie"
-	 putStrLn "2 : Voir les meilleurs scores"
-<<<<<<< HEAD
-	 putStrLn "3 : Quitter"
-	 choice <- getLine
-	 if choice == "3"
-	   then return ()
-	   else do
-	          menu choice
-		  main
--}
-=======
-
->>>>>>> cae96f1d4a65f4d22da8cf145255433a9e3e7036
-main = withInit [InitVideo] $
-          do
-	    ttf <- TTF.init
-	    case ttf of
-	      False -> putStrLn "SDL_TTF cannot be initialized."
-	      True -> do
-	                screen <- SDL.setVideoMode 500 640 32 [HWSurface]
-	                SDL.setCaption "Drunken Moon" "Drunken Moon"
-	                enableUnicode True
-	                Menu.loop screen
-			TTF.quit
-=======
- 	 putStrLn "3 : Quitter"
-	 choice <- getChar
-	 if (choice == '3')
-	 	then return ()
-	 	else do
-	 		menu choice
-			main
-
->>>>>>> 34e26a8977effcb859f815e0e4de6b65c8e6355f
+main = withInit [InitVideo] $ do
+		ttf <- TTF.init
+		case ttf of
+			False -> putStrLn "SDL_TTF cannot be initialized."
+			True -> do
+				screen <- SDL.setVideoMode 500 640 32 [HWSurface]
+				SDL.setCaption "Drunken Moon" "Drunken Moon"
+				enableUnicode True
+				Menu.loop $ MenuEnv screen 0 (Rect x y w h)
+		SDL.quit
+			
+		where
+			x = 200
+			y = 150
+			w = 100
+			h = 25
