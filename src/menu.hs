@@ -28,57 +28,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-import Score
-import Game
-import Menu
+module Menu (loop) where
 
+import Font
+
+import System.Exit
 import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.Image as IMG
 import Graphics.UI.SDL.TTF as TTF
 
--- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
+title :: Surface -> IO ()
+title screen = do
+                 font <- Font.dejavu 20
+		 TTF.setFontStyle font [ StyleBold ]
 
-menu :: String -> IO ()
-menu "1" = Game.newGame
-menu "2" = Score.showScores
-menu c = putStrLn ("Le choix '" ++ c ++ "' n'existe pas !")
+		 text <- TTF.renderTextBlended font "Drunken Moon" color
+		 SDL.blitSurface text Nothing screen (Just rect)
 
--- Fonction main servant de point de départ au programme.
-<<<<<<< HEAD
-{-
-main = do
-         putStrLn "Bonsoir ! Que voulez-vous faire ?"
-	 putStrLn "1 : Nouvelle partie"
-	 putStrLn "2 : Voir les meilleurs scores"
-<<<<<<< HEAD
-	 putStrLn "3 : Quitter"
-	 choice <- getLine
-	 if choice == "3"
-	   then return ()
-	   else do
-	          menu choice
-		  main
--}
-=======
+		 return ()
 
->>>>>>> cae96f1d4a65f4d22da8cf145255433a9e3e7036
-main = withInit [InitVideo] $
-          do
-	    ttf <- TTF.init
-	    case ttf of
-	      False -> putStrLn "SDL_TTF cannot be initialized."
-	      True -> do
-	                screen <- SDL.setVideoMode 500 640 32 [HWSurface]
-	                SDL.setCaption "Drunken Moon" "Drunken Moon"
-	                enableUnicode True
-	                Menu.loop screen
-			TTF.quit
-=======
- 	 putStrLn "3 : Quitter"
-	 choice <- getChar
-	 if (choice == '3')
-	 	then return ()
-	 	else do
-	 		menu choice
-			main
+		 where color = Color 0x00 0x00 0x00
+		       rect = Rect 150 30 500 640
 
->>>>>>> 34e26a8977effcb859f815e0e4de6b65c8e6355f
+loop :: Surface -> IO ()
+loop screen = do
+                event <- waitEvent
+		case event of
+		  Quit -> exitWith ExitSuccess
+		  KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
+		  KeyDown (Keysym _ _ key) -> manageKey key
+		  _			   -> return ()
+		display screen
+		SDL.flip screen
+		loop screen
+
+		where manageKey key = return ()
+
+		      display screen = do
+					 suika <- IMG.load "rc/images/Suika.jpeg"
+					 SDL.fillRect screen Nothing pixel
+					 SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+
+					 title screen
+
+					 where color = Color 0x00 0x00 0x00
+					       pixel = Pixel 0xFFFFFF
+					       x = 500 - 333
+					       y = 640 - 327
