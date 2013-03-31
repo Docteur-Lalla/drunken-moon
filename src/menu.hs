@@ -37,6 +37,19 @@ import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Image as IMG
 import Graphics.UI.SDL.TTF as TTF
 
+title :: Surface -> IO ()
+title screen = do
+                 font <- Font.dejavu 20
+		 TTF.setFontStyle font [ StyleBold ]
+
+		 text <- TTF.renderTextBlended font "Drunken Moon" color
+		 SDL.blitSurface text Nothing screen (Just rect)
+
+		 return ()
+
+		 where color = Color 0x00 0x00 0x00
+		       rect = Rect 150 30 500 640
+
 loop :: Surface -> IO ()
 loop screen = do
                 event <- waitEvent
@@ -52,13 +65,11 @@ loop screen = do
 		where manageKey key = return ()
 
 		      display screen = do
-		                         font <- Font.dejavu 14
-					 TTF.setFontStyle font [TTF.StyleBold]
-					 text <- TTF.renderTextBlended font "Voici Drunken Moon" color
 					 suika <- IMG.load "rc/images/Suika.jpeg"
 					 SDL.fillRect screen Nothing pixel
-					 SDL.blitSurface text Nothing screen (Just (Rect 325 0 500 640))
 					 SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+
+					 title screen
 
 					 where color = Color 0x00 0x00 0x00
 					       pixel = Pixel 0xFFFFFF

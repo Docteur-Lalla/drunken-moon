@@ -43,19 +43,7 @@ menu "2" = Score.showScores
 menu c = putStrLn ("Le choix '" ++ c ++ "' n'existe pas !")
 
 -- Fonction main servant de point de départ au programme.
-{-
-main = do
-         putStrLn "Bonsoir ! Que voulez-vous faire ?"
-	 putStrLn "1 : Nouvelle partie"
-	 putStrLn "2 : Voir les meilleurs scores"
-	 putStrLn "3 : Quitter"
-	 choice <- getLine
-	 if choice == "3"
-	   then return ()
-	   else do
-	          menu choice
-		  main
--}
+
 main = withInit [InitVideo] $
           do
 	    ttf <- TTF.init
