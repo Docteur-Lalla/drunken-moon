@@ -47,6 +47,7 @@ main = do
          putStrLn "Bonsoir ! Que voulez-vous faire ?"
 	 putStrLn "1 : Nouvelle partie"
 	 putStrLn "2 : Voir les meilleurs scores"
+<<<<<<< HEAD
 	 putStrLn "3 : Quitter"
 	 choice <- getLine
 	 if choice == "3"
@@ -66,3 +67,13 @@ main = withInit [InitVideo] $
 	                enableUnicode True
 	                Game.loop screen
 			TTF.quit
+=======
+ 	 putStrLn "3 : Quitter"
+	 choice <- getChar
+	 if (choice == '3')
+	 	then return ()
+	 	else do
+	 		menu choice
+			main
+
+>>>>>>> 34e26a8977effcb859f815e0e4de6b65c8e6355f
