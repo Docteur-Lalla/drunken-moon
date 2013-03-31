@@ -28,42 +28,30 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-import Score
-import Game
-import Menu
+module Menu (loop) where
 
+import System.Exit
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 
--- Fonction menu qui détermine si on lance une partie ou si on montre les scores.
+loop :: Surface -> IO ()
+loop screen = do
+                event <- waitEvent
+		case event of
+		  Quit -> exitWith ExitSuccess
+		  KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
+		  KeyDown (Keysym _ _ key) -> manageKey key
+		  _			   -> return ()
+		display screen
+		SDL.flip screen
+		loop screen
 
-menu :: String -> IO ()
-menu "1" = Game.newGame
-menu "2" = Score.showScores
-menu c = putStrLn ("Le choix '" ++ c ++ "' n'existe pas !")
+		where manageKey key = return ()
 
--- Fonction main servant de point de départ au programme.
-{-
-main = do
-         putStrLn "Bonsoir ! Que voulez-vous faire ?"
-	 putStrLn "1 : Nouvelle partie"
-	 putStrLn "2 : Voir les meilleurs scores"
-	 putStrLn "3 : Quitter"
-	 choice <- getLine
-	 if choice == "3"
-	   then return ()
-	   else do
-	          menu choice
-		  main
--}
-main = withInit [InitVideo] $
-          do
-	    ttf <- TTF.init
-	    case ttf of
-	      False -> putStrLn "SDL_TTF cannot be initialized."
-	      True -> do
-	                screen <- SDL.setVideoMode 500 640 32 [HWSurface]
-	                SDL.setCaption "Drunken Moon" "Drunken Moon"
-	                enableUnicode True
-	                Menu.loop screen
-			TTF.quit
+		      display screen = do
+		                         font <- TTF.openFont dejavu 9
+					 text <- TTF.renderTextSolid font "Voici Drunken Moon" color
+					 SDL.blitSurface text Nothing screen (Just (Rect 350 0 500 640))
+
+					 where color = Color 0xFF 0xFF 0xFF
+					       dejavu = "/usr/share/fonts/TTF/DejaVuSerif.ttf"
