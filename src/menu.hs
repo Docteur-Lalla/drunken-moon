@@ -39,16 +39,12 @@ import Graphics.UI.SDL.TTF as TTF
 
 title :: Surface -> IO ()
 title screen = do
-                 font <- Font.dejavu 20
+                 font <- Font.vera 20
 		 TTF.setFontStyle font [ StyleBold ]
 
-		 text <- TTF.renderTextBlended font "Drunken Moon" color
-		 SDL.blitSurface text Nothing screen (Just rect)
-
-		 return ()
+                 Font.renderCenteredText font "Drunken Moon" color screen 35
 
 		 where color = Color 0x00 0x00 0x00
-		       rect = Rect 150 30 500 640
 
 loop :: Surface -> IO ()
 loop screen = do

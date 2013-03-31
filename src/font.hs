@@ -30,10 +30,27 @@
 
 module Font where
 
+import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 
 fontDir :: String
 fontDir = "/usr/share/fonts/TTF/"
 
+vera :: Int -> IO Font
+vera n = TTF.openFont (fontDir ++ "Vera.ttf") n
+
 dejavu :: Int -> IO Font
 dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
+
+-- Render a centered text.
+
+renderCenteredText :: Font -> String -> Color -> Surface -> Int -> IO ()
+renderCenteredText f s c scr y = do
+                                   (x, _) <- TTF.textSize f s
+				   text <- TTF.renderTextBlended f s c
+                                   SDL.blitSurface text Nothing scr (rect x)
+
+				   return ()
+
+				   where rect x = Just (Rect (centered'x x) y 500 640)
+				         centered'x x = 250 - (quot x 2)
