@@ -39,6 +39,9 @@ fontDir = "/usr/share/fonts/TTF/"
 vera :: Int -> IO Font
 vera n = TTF.openFont (fontDir ++ "Vera.ttf") n
 
+liberation :: Int -> IO Font
+liberation n = TTF.openFont (fontDir ++ "LiberationSerif-Regular.ttf") n
+
 dejavu :: Int -> IO Font
 dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
 

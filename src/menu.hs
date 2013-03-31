@@ -39,7 +39,7 @@ import Graphics.UI.SDL.TTF as TTF
 
 title :: Surface -> IO ()
 title screen = do
-                 font <- Font.vera 20
+                 font <- Font.vera 28
 		 TTF.setFontStyle font [ StyleBold ]
 
                  Font.renderCenteredText font "Drunken Moon" color screen 35
