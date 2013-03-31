@@ -30,6 +30,8 @@
 
 module Font where
 
+import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.Image as IMG
 import Graphics.UI.SDL.TTF as TTF
 
 fontDir :: String
@@ -37,3 +39,6 @@ fontDir = "/usr/share/fonts/TTF/"
 
 dejavu :: Int -> IO Font
 dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
+
+blanc = Color 0xFF 0xFF 0xFF
+noir = Color 0x00 0x00 0x00

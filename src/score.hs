@@ -28,13 +28,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Score (showScores, writeScore) where
+module Score (showScores, writeScore, askUsername) where
 
 import Font
-import System.Exit
+
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 import Graphics.UI.SDL.Image as IMG
+
 import qualified Data.ByteString as BS
 import Data.ByteString.Char8 as BSC
 
@@ -42,7 +43,7 @@ import Data.ByteString.Char8 as BSC
 
 getScoreLines :: IO [BS.ByteString]
 getScoreLines = do
-		  contents <- BS.readFile "../rc/score"
+		  contents <- BS.readFile "rc/score"
 		  return (BSC.split '\n' contents)
 		  
 		  
@@ -70,13 +71,17 @@ showScores screen = do
 					_   -> reloop
 					
 			display screen = do
+			
 				lines <- getScoreLines
-				suika <- IMG.load "../rc/images/Suika.jpeg"
+				
+				suika <- IMG.load "rc/images/Suika.jpeg"
 				SDL.fillRect screen Nothing pixel
 				SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+				
 				font <- Font.dejavu 15
 				text <- TTF.renderTextBlended font "** SCORES **" noir
-				SDL.blitSurface text Nothing screen (Just (Rect 180 130 0 0))
+				SDL.blitSurface text Nothing screen (Just (Rect 180 120 0 0))
+				
 				forEach lines dispLine 0
 				
 				where
@@ -91,8 +96,10 @@ showScores screen = do
 						forEach xs f (i+1)
 					
 					dispLine l i = do
+					
 						font <- Font.dejavu 9
 						text <- TTF.tryRenderTextBlended font (unpack l) noir
+						
 						case text of
 							Nothing -> return ()
 							Just t  -> do
@@ -103,3 +110,44 @@ showScores screen = do
 
 writeScore :: Int -> IO ()
 writeScore n = Prelude.putStrLn "Nyu !"
+
+-- Demande à l'utilisateur de rentrer son pseudo
+
+askUsername screen = aux ""
+	where
+		aux str = do
+			
+			display screen
+			SDL.flip screen
+			
+			evt <- SDL.waitEvent
+			case evt of
+				Quit                     -> return str --pas certain mais surement utiliser exitWith
+				KeyDown (Keysym sym _ c) -> manageKey sym c
+				_                        -> aux str
+
+			where
+				manageKey sym c = case sym of
+					SDLK_RETURN -> return str
+					SDLK_BACKSPACE -> aux (rmlst str "")
+					SDLK_SPACE -> aux (str++" ")
+					_ -> if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+						then aux (str++[c])
+						else aux str
+					
+					where
+						rmlst [] _ = []
+						rmlst (x:[]) buf = buf
+						rmlst (x:xs) buf = rmlst xs (buf++[x])
+						
+				display screen = do
+				
+					SDL.fillRect screen Nothing (Pixel 0xFFFFFF)
+					font <- Font.dejavu 15
+					text <- TTF.tryRenderTextBlended font str noir
+					case text of
+						Nothing -> return ()
+						Just t -> do 
+							SDL.blitSurface t Nothing screen (Just (Rect 100 100 0 0))
+							return ()
+					

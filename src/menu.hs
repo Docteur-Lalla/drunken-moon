@@ -43,18 +43,26 @@ import Graphics.UI.SDL.TTF as TTF
 Cré l'environnement du menu
 	* screen définit la fenètre
 	* choice définit le choix de l'utilisateur
-	* select "l'image" du sélecteur
 -}
-data Env = MenuEnv { screen :: Surface, choice :: Int, select :: Rect }
+data Env = MenuEnv { screen :: Surface, choice :: Int }
 
 title :: Surface -> IO ()
 title screen = do
                  font <- Font.dejavu 20
 		 TTF.setFontStyle font [ StyleBold ]
-
+		 
+		 font2 <- Font.dejavu 15
+		 
 		 text <- TTF.renderTextBlended font "Drunken Moon" color
 		 SDL.blitSurface text Nothing screen (Just rect)
 
+		 newgame <- TTF.renderTextBlended font2 "New Game" color
+		 voirscores <- TTF.renderTextBlended font2 "Scores" color
+		 quitter <- TTF.renderTextBlended font2 "Quitter" color
+
+		 SDL.blitSurface newgame Nothing screen (Just $ Rect 210 155 0 0)
+		 SDL.blitSurface voirscores Nothing screen (Just $ Rect 210 175 0 0)
+		 SDL.blitSurface quitter Nothing screen (Just $ Rect 210 195 0 0)
 		 return ()
 
 		 where color = Color 0x00 0x00 0x00
@@ -70,7 +78,7 @@ title screen = do
 	revenir de Scores à Menu, ou quitter le menu reviendrait à envoyer 'return ()'
 -}
 loop :: Env -> IO ()
-loop (MenuEnv screen choice select) = do
+loop (MenuEnv screen choice) = do
 
 		display screen
 		SDL.flip screen
@@ -84,12 +92,12 @@ loop (MenuEnv screen choice select) = do
 
 		where 
 			manageKey key = case key of
-					SDLK_DOWN -> if (choice > 2)
+					SDLK_DOWN -> if (choice >= 2)
 								then reloop
-								else loop $ MenuEnv screen (choice+1) (moveDown select)
-					SDLK_UP   -> if (choice < 0)
+								else loop $ MenuEnv screen (choice+1)
+					SDLK_UP   -> if (choice <= 0)
 								then reloop
-								else loop $ MenuEnv screen (choice-1) (moveUp select)
+								else loop $ MenuEnv screen (choice-1)
 					SDLK_RETURN -> case choice of
 									0 -> do 
 										Game.newGame
@@ -99,16 +107,12 @@ loop (MenuEnv screen choice select) = do
 										reloop
 									2 -> return ()									
 					_            -> reloop
-				
-					where
-						moveDown (Rect x y w h) = Rect x (y+30) w h
-						moveUp (Rect x y w h) = Rect x (y-30) w h
 
 			display screen = do
-					 suika <- IMG.load "../rc/images/Suika.jpeg"
+					 suika <- IMG.load "rc/images/Suika.jpeg"
 					 SDL.fillRect screen Nothing pixel
 					 SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
-					 SDL.fillRect screen (Just select) (Pixel 0x000000)
+					 SDL.fillRect screen (Just (Rect 200 (172+20*choice) 100 1)) (Pixel 0x000000)
 
 					 title screen
 
@@ -117,4 +121,4 @@ loop (MenuEnv screen choice select) = do
 					       x = 500 - 333
 					       y = 640 - 327
 
-			reloop = loop $ MenuEnv screen choice select
+			reloop = loop $ MenuEnv screen choice
