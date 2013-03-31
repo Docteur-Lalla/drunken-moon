@@ -28,31 +28,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Menu (loop) where
+module Font where
 
-import Font
-
-import System.Exit
-import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 
-loop :: Surface -> IO ()
-loop screen = do
-                event <- waitEvent
-		case event of
-		  Quit -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ key) -> manageKey key
-		  _			   -> return ()
-		display screen
-		SDL.flip screen
-		loop screen
+fontDir :: String
+fontDir = "/usr/share/fonts/TTF/"
 
-		where manageKey key = return ()
-
-		      display screen = do
-		                         font <- Font.dejavu 9
-					 text <- TTF.renderTextSolid font "Voici Drunken Moon" color
-					 SDL.blitSurface text Nothing screen (Just (Rect 350 0 500 640))
-
-					 where color = Color 0xFF 0xFF 0xFF
+dejavu :: Int -> IO Font
+dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
