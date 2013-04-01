@@ -45,6 +45,7 @@ main = withInit [InitVideo] $
 	      True -> do
 	                screen <- SDL.setVideoMode 500 640 32 [HWSurface]
 	                SDL.setCaption "Drunken Moon" "Drunken Moon"
+			SDL.enableKeyRepeat 500 20
 	                enableUnicode True
 	                Menu.loop screen 0
 			SDL.quit
