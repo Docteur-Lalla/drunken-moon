@@ -46,28 +46,75 @@ title screen = do
 
 		 where color = Color 0x00 0x00 0x00
 
-loop :: Surface -> IO ()
-loop screen = do
-                event <- waitEvent
-		case event of
-		  Quit -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ key) -> manageKey key
-		  _			   -> return ()
-		display screen
-		SDL.flip screen
-		loop screen
+{-
+    Boucle principale du menu.
+    Il affiche les éléments de celui-ci (titre, choix, image de fond et sélecteur)
 
-		where manageKey key = return ()
+    manageKey : gère les évènements clavier
+    display : gère l'affichage
+    displaySelector : affiche le sélecteur
+ -}
 
-		      display screen = do
-					 suika <- IMG.load "rc/images/Suika.jpeg"
-					 SDL.fillRect screen Nothing pixel
-					 SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+displaySelector :: Font -> Int -> Int -> Surface -> IO ()
+displaySelector f step c scr = do
+                                 (_, h) <- TTF.textSize f "Nyu"
 
-					 title screen
+                                 select <- IMG.load "rc/images/sun.jpg"
+				 SDL.blitSurface select Nothing scr $ Just (position step h)
+				 
+				 return ()
 
-					 where color = Color 0x00 0x00 0x00
-					       pixel = Pixel 0xFFFFFF
-					       x = 500 - 333
-					       y = 640 - 327
+				 where position step h = Rect x (y step h) 500 640
+				       x = 20
+				       y step h = 100 + (step + h) * c - 20
+
+display :: Int -> Surface -> IO ()
+display choice screen = do
+                          suika <- IMG.load "rc/images/Suika.jpeg"
+	                  SDL.fillRect screen Nothing pixel
+	                  SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+		          title screen
+
+		          font' <- Font.dejavu 14
+		          TTF.setFontStyle font' [ StyleBold ]
+
+		          Font.renderAlignedText font' choices color screen (80, 100) 10
+			  displaySelector font' 10 choice screen
+
+                          where color = Color 0x00 0x00 0x00
+		                pixel = Pixel 0xFFFFFF
+		                x = 500 - 333
+		                y = 640 - 327
+		                choices = ["Nouvelle partie", "Scores", "Quitter"]
+
+loop :: Surface -> Int -> IO ()
+loop screen choice = do
+		       display choice screen
+	     	       SDL.flip screen
+
+                       event <- waitEvent
+		       case event of
+		         Quit -> exitWith ExitSuccess
+		         KeyDown (Keysym _ _ 'q') -> return ()
+		         KeyDown (Keysym key _ _) -> manageKey key
+		         _			   -> reloop
+
+		       where reloop = loop screen choice
+		             loopwith = loop screen
+
+		             manageKey key = case key of
+		                               SDLK_DOWN	-> if choice >= 2
+					                             then loopwith 0
+								     else loopwith (choice + 1)
+					       SDLK_UP		-> if choice <= 0
+					                             then loopwith 2
+								     else loopwith (choice - 1)
+					       SDLK_RETURN	-> case choice of
+					                             0 -> do
+								            -- Game.newGame
+									    reloop
+								     1 -> do
+								            -- Score.showScores
+									    reloop
+								     2 -> return ()
+					       _		-> reloop

@@ -36,6 +36,9 @@ import Graphics.UI.SDL.TTF as TTF
 fontDir :: String
 fontDir = "/usr/share/fonts/TTF/"
 
+-- Vera, Liberation et DejaVu sont des polices de caractère.
+-- Ces fonctions permettent d'ouvrir les-dites polices plus élégamment.
+
 vera :: Int -> IO Font
 vera n = TTF.openFont (fontDir ++ "Vera.ttf") n
 
@@ -45,7 +48,7 @@ liberation n = TTF.openFont (fontDir ++ "LiberationSerif-Regular.ttf") n
 dejavu :: Int -> IO Font
 dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
 
--- Render a centered text.
+-- Affiche un texte centré.
 
 renderCenteredText :: Font -> String -> Color -> Surface -> Int -> IO ()
 renderCenteredText f s c scr y = do
@@ -57,3 +60,20 @@ renderCenteredText f s c scr y = do
 
 				   where rect x = Just (Rect (centered'x x) y 500 640)
 				         centered'x x = 250 - (quot x 2)
+
+-- Police -> Lignes -> Couleur -> Ecran -> Coordonnées -> Espace entre chaque ligne -> Retour
+renderAlignedText :: Font -> [String] -> Color -> Surface -> (Int, Int) -> Int -> IO ()
+renderAlignedText _ [] _ _ _ _ = return ()
+renderAlignedText f (s:ss) c scr (x, y) step = do
+                                                 (_, h) <- TTF.textSize f s
+						 text <- TTF.tryRenderTextBlended f s c
+						 case text of
+						   Nothing	-> return ()
+						   Just t	-> do
+						                     SDL.blitSurface t Nothing scr (rect x y)
+								     return ()
+
+						 renderAlignedText f ss c scr (x, new'y h) step
+					       
+					       where new'y h = y + h + step -- position + pas + taille du texte.
+					             rect x y = Just (Rect x y 500 640)
