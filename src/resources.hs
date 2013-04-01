@@ -28,31 +28,50 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-import Score
-import Game
-import Menu
-import Resources
+module Resources where
 
 import Graphics.UI.SDL as SDL
-import Graphics.UI.SDL.TTF as TTF
+import Graphics.UI.SDL.Image as IMG
 
-main = withInit [InitVideo] $ do
-		ttf <- TTF.init
-		case ttf of
-			False -> putStrLn "SDL_TTF cannot be initialized."
-			True -> do
-				screen <- SDL.setVideoMode 500 640 32 [HWSurface]
-				SDL.setCaption "Drunken Moon" "Drunken Moon"
-				enableUnicode True
-				
-				resources <- initRes
-				case resources of
-					Nothing  -> putStrLn "Resources cannot be loaded."
-					Just res -> Menu.loop $ MenuEnv screen 0 --res
-		SDL.quit
-			
-		where
-			x = 200
-			y = 150
-			w = 100
-			h = 25
+-- Gestion de l'environnement
+
+type MapSurface = (String, Surface)
+type Environment = [MapSurface]
+
+getResource :: String -> Environment -> Maybe Surface
+getResource _ [] = Nothing
+getResource id ((name, surface):xs)
+	| id == name = Just surface
+	| otherwise  = getResource id xs
+	
+exists :: String -> Environment -> Bool
+exists _ [] = False
+exists id ((name, _):xs)
+	| id == name = True
+	| otherwise  = exists id xs
+	
+addResource :: String -> Surface -> Environment -> Maybe Environment
+addResource "" _ _ = Nothing
+addResource id s e
+	| exists id e = Nothing
+	| otherwise   = Just ((id, s) : e)
+
+rmResource :: String -> Environment -> Environment
+rmResource _ [] = []
+rmResource id (x:xs)
+	| id == (fst x) = rmResource id xs
+	| otherwise     = x : rmResource id xs
+
+initRes :: IO (Maybe Environment)
+initRes = do
+	suika <- IMG.load "rc/images/Suika.jpeg"
+	sun <- IMG.load "rc/images/sun.jpg"
+	
+	
+	return $ addResource "sun" sun [] >>= addResource "suika" suika
+		
+-- Pourquoi pas une de display ?
+
+displaySurface :: Maybe Surface -> Surface -> Int -> Int -> IO Bool
+displaySurface Nothing _ _ _ = return False
+displaySurface (Just src) dst x y   = SDL.blitSurface src Nothing dst (Just (Rect x y 0 0))
