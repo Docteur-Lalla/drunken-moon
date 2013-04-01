@@ -43,8 +43,8 @@ main = withInit [InitVideo] $ do
 				screen <- SDL.setVideoMode 500 640 32 [HWSurface]
 				SDL.setCaption "Drunken Moon" "Drunken Moon"
 				enableUnicode True
-				--Menu.loop $ MenuEnv screen 0
-				Score.askUsername screen
+				Menu.loop $ MenuEnv screen 0
+				--Score.askUsername screen
 				return ()
 		SDL.quit
 			
