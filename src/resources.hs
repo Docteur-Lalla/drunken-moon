@@ -38,10 +38,8 @@ import Graphics.UI.SDL.Image as IMG
 type MapSurface = (String, Surface)
 type Environment = [MapSurface]
 
--- Recupere l'image ayant pour id 'id' (ie: getResource "suika" e renvoie l'image nommee "suika" dans l'environnement 'e'
-
 getResource :: String -> Environment -> Maybe Surface
-getResource _ [] = Nothing
+getResource id [] = Nothing
 getResource id ((name, surface):xs)
 	| id == name = Just surface
 	| otherwise  = getResource id xs
@@ -51,16 +49,12 @@ exists _ [] = False
 exists id ((name, _):xs)
 	| id == name = True
 	| otherwise  = exists id xs
-
--- Ajoute une image avec son identifiant, si l'identifiant éxiste déjà dans l'environnement, on renvoie Nothing, sinon le nouvel Env
-
-addResource :: String -> Surface -> Environment -> Maybe Environment
-addResource "" _ _ = Nothing
+	
+addResource :: String -> Surface -> Environment -> Environment
+addResource "" _ e = e
 addResource id s e
-	| exists id e = Nothing
-	| otherwise   = Just ((id, s) : e)
-
--- Supprime l'image à l'identifiant 'id' et renvoie le nouvel environnement
+	| exists id e = e
+	| otherwise   = (id, s) : e
 
 rmResource :: String -> Environment -> Environment
 rmResource _ [] = []
@@ -68,18 +62,24 @@ rmResource id (x:xs)
 	| id == (fst x) = rmResource id xs
 	| otherwise     = x : rmResource id xs
 
--- Initialise l'environnement de Drunken Moon
-
-initRes :: IO (Maybe Environment)
+updateResource :: String -> Surface -> Environment -> Environment
+updateResource "" _ e = e
+updateResource id s e
+	| exists id e = (id, s) : new
+	| otherwise = (id, s) : e
+	where
+		new = rmResource id e
+			
+initRes :: IO Environment
 initRes = do
 	suika <- IMG.load "rc/images/Suika.jpeg"
 	sun <- IMG.load "rc/images/sun.jpg"
 	
 	
-	return $ addResource "sun" sun [] >>= addResource "suika" suika
+	return $ addResource "sun" sun $ addResource "suika" suika []
 		
--- Permet d'afficher une Surface venant de l'environnement plus facilement (ie: displaySurface img screen 0 0)
+-- Pourquoi pas une de display ?
 
 displaySurface :: Maybe Surface -> Surface -> Int -> Int -> IO Bool
 displaySurface Nothing _ _ _ = return False
-displaySurface (Just src) dst x y   = SDL.blitSurface src Nothing dst (Just (Rect x y 0 0))
+displaySurface (Just src) dst x y = SDL.blitSurface src Nothing dst (Just (Rect x y 0 0))

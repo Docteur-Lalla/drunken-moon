@@ -28,9 +28,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Score (showScores, writeScore, askUsername) where
+module Score (showScores, writeScore) where
 
 import Font
+import Resources
 
 import System.IO
 import Graphics.UI.SDL as SDL
@@ -53,8 +54,8 @@ getScoreLines = do
 		  
 -- Affiche les scores enregistrés.
 
-showScores :: Surface -> IO ()
-showScores screen = do
+showScores :: Surface -> Environment -> IO ()
+showScores screen env = do
 
 		display screen
 		SDL.flip screen
@@ -66,7 +67,7 @@ showScores screen = do
 			_                        -> reloop
 		
 		where
-			reloop = showScores screen
+			reloop = showScores screen env
 			
 			manageKey key =
 				case key of
@@ -77,13 +78,13 @@ showScores screen = do
 			
 				line <- getScoreLines
 				
-				suika <- IMG.load "rc/images/Suika.jpeg"
+				let suika = getResource "suika" env
 				SDL.fillRect screen Nothing pixel
-				SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+				displaySurface suika screen x y
 				
 				font <- Font.dejavu 15
-				text <- TTF.renderTextBlended font "** SCORES **" noir
-				SDL.blitSurface text Nothing screen (Just (Rect 200 120 0 0))
+				text <- TTF.tryRenderTextBlended font "** SCORES **" noir
+				displaySurface text screen 200 120
 				
 				forEach line dispLine 0
 				
@@ -104,61 +105,129 @@ showScores screen = do
 						else do
 							font <- Font.dejavu 12
 
-							(w, h) <- TTF.textSize font score
-							tscore <- TTF.renderTextBlended font (score) noir
-							tname <- TTF.renderTextBlended font (nom) noir
+							(w, h) <- TTF.textSize font "|j"
+							tscore <- TTF.tryRenderTextBlended font (score) noir
+							tname <- TTF.tryRenderTextBlended font (nom) noir
 							
-							SDL.blitSurface tname Nothing screen (Just (Rect 150 (150+i*13) 0 0))
-							SDL.blitSurface tscore Nothing screen (Just (Rect (350 - w) (150+i*13) 0 0))
+							displaySurface tname screen 150 (150+i*13)
+							displaySurface tscore screen (350 - w) (150+i*13)
 							return ()
 							
 							where
 								ligne = LIST.words l
 								nom = LIST.last ligne
 								score = LIST.head ligne
-						
+
+-- Etats du writeScore
+
+data State
+	= ChngName
+	| ScoreMenu
+	| Return
+	deriving (Eq)
+
 -- Enregistre un nouveau score.
 
-writeScore :: Int -> IO ()
-writeScore n = Prelude.putStrLn "Nyu !"
+writeScore = writeScore' "" ScoreMenu 0
+writeScore' :: String -> State -> Int -> Surface -> Environment -> Int -> IO ()
+writeScore' str state choix screen env score = do
 
--- Demande à l'utilisateur de rentrer son pseudo
+	displayWriteScore screen env state str score choix
+	
+	evt <- SDL.waitEvent
+	case state of
+		ChngName -> do
+			ret <- manageChngName str evt
+			loopChngName ret
+		ScoreMenu -> do
+			ret <- manageScoreMenu choix evt
+			loopScoreMenu ret
+		Return -> return ()
+			
+		where
+			loopChngName (st, s) = writeScore' s st choix screen env score
+			loopScoreMenu (st, c) = writeScore' str st c screen env score
+		
+-- Affiche l'écan à la saisie du pseudo
+	
+displayWriteScore :: Surface -> Environment -> State -> String -> Int -> Int -> IO ()
+displayWriteScore s env st name sc c = do
+	dispBG s env
+	dispNewScore s name sc
+	
+	if st == ScoreMenu
+	then do
+		dispScoreMenu s c
+	else return ()	
+	
+	SDL.flip s
+	
+	return ()
+	
+-- Affiche l'arrière plan
 
-askUsername screen = do 
-	SDL.enableKeyRepeat 500 20
-	aux ""
+dispBG :: Surface -> Environment -> IO ()
+dispBG screen env = do
+	SDL.fillRect screen Nothing (Pixel 0xFFFFFF)
+	displaySurface (getResource "suika" env) screen 167 313
+	return ()
+
+-- Affiche le score et le pseudo
+
+dispNewScore :: Surface -> String -> Int -> IO ()
+dispNewScore screen name score = do
+	font <- dejavu 15
+	(w, h) <- TTF.textSize font "|j"
+	tscore <- TTF.tryRenderTextBlended font ("Pseudo : "++name) noir
+	tname <- TTF.tryRenderTextBlended font ("Score : "++(show score)) noir
+	
+	displaySurface tname screen 0 0
+	displaySurface tscore screen 0 (h+5)
+	
+	return ()
+
+-- Affiche le menu avec les choix "Accepter", "Changer Pseudo", et "Quitter"
+
+dispScoreMenu :: Surface -> Int -> IO ()
+dispScoreMenu screen choix = return ()
+
+-- Gère les Eventsf pendant la phase de saisie du pseudo
+
+manageChngName :: String -> Event -> IO (State, String)
+manageChngName str evt = case evt of
+	Quit -> return (Return, str)
+	KeyDown (Keysym sym _ c) -> manageKey sym c
+	_ -> manageChngName str evt
+
 	where
-		aux str = do
-			
-			display screen
-			SDL.flip screen
-			
-			evt <- SDL.waitEvent
-			case evt of
-				Quit                     -> return str --pas certain mais surement utiliser exitWith
-				KeyDown (Keysym sym _ c) -> manageKey sym c
-				_                        -> aux str
-
+		manageKey sym c = case sym of
+			SDLK_RETURN -> return (ScoreMenu, str)
+			SDLK_BACKSPACE -> return (ChngName, rmlst str)
+			SDLK_SPACE -> return (ChngName, str++" ")
+			_ -> if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
+				then return (ChngName, str++[c])
+				else return (ChngName, str)
+				
 			where
-				manageKey sym c = case sym of
-					SDLK_RETURN -> return str
-					SDLK_BACKSPACE -> aux (rmlst str)
-					SDLK_SPACE -> aux (str++" ")
-					_ -> if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9'))
-						then aux (str++[c])
-						else aux str
-						
-					where
-						rmlst [] = []
-						rmlst a = LIST.init a
-						
-				display screen = do
-					SDL.fillRect screen Nothing (Pixel 0xFFFFFF)
-					font <- Font.dejavu 15
-					text <- TTF.tryRenderTextBlended font str noir
-					case text of
-						Nothing -> return ()
-						Just t -> do 
-							SDL.blitSurface t Nothing screen (Just (Rect 100 100 0 0))
-							return ()
-					
+				rmlst [] = []
+				rmlst a = LIST.init a
+
+-- Gère les Events au menu du writeScore
+
+manageScoreMenu :: Int -> Event -> IO (State, Int)
+manageScoreMenu c evt = case evt of
+	Quit -> return (Return, c)
+	KeyDown (Keysym sym _ _) -> manageKey sym
+	_ -> manageScoreMenu c evt
+	where
+		manageKey sym = case sym of
+			SDLK_UP -> if (c <= 0)
+					then return (ScoreMenu, 2)
+					else return (ScoreMenu, c-1)
+			SDLK_DOWN -> if (c >= 2)
+					then return (ScoreMenu, 0)
+					else return (ScoreMenu, c+1)
+			SDLK_RETURN -> case c of
+					0 -> return (ChngName, c)
+					1 -> return (Return, c)
+					2 -> return (Return, c)

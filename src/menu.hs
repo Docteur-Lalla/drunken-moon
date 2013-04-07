@@ -31,8 +31,9 @@
 module Menu where
 
 import Font
-import Score
-import Game
+import Score (showScores)
+import Game (newGame)
+import Resources
 
 import System.Exit
 import Graphics.UI.SDL as SDL
@@ -43,8 +44,9 @@ import Graphics.UI.SDL.TTF as TTF
 Cré l'environnement du menu
 	* screen définit la fenètre
 	* choice définit le choix de l'utilisateur
+	* env définit les ressources (images/sons)
 -}
-data Env = MenuEnv { screen :: Surface, choice :: Int }
+data Env = MenuEnv { screen :: Surface, choice :: Int, env :: Environment }
 
 title :: Surface -> IO ()
 title screen = do
@@ -78,9 +80,9 @@ title screen = do
 	revenir de Scores à Menu, ou quitter le menu reviendrait à envoyer 'return ()'
 -}
 loop :: Env -> IO ()
-loop (MenuEnv screen choice) = do
+loop (MenuEnv screen choice env) = do
 
-		display screen
+		display screen env
 		SDL.flip screen
 		
 		event <- waitEvent
@@ -94,24 +96,24 @@ loop (MenuEnv screen choice) = do
 			manageKey key = case key of
 					SDLK_DOWN -> if (choice >= 2)
 								then reloop
-								else loop $ MenuEnv screen (choice+1)
+								else loop $ MenuEnv screen (choice+1) env
 					SDLK_UP   -> if (choice <= 0)
 								then reloop
-								else loop $ MenuEnv screen (choice-1)
+								else loop $ MenuEnv screen (choice-1) env
 					SDLK_RETURN -> case choice of
 									0 -> do 
 										Game.newGame
 										reloop
 									1 -> do
-										Score.showScores screen
+										Score.showScores screen env
 										reloop
 									2 -> return ()									
 					_            -> reloop
 
-			display screen = do
-					 suika <- IMG.load "rc/images/Suika.jpeg"
+			display screen env = do
+					 let suika = getResource "suika" env
 					 SDL.fillRect screen Nothing pixel
-					 SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
+					 displaySurface suika screen x y
 					 SDL.fillRect screen (Just (Rect 200 (172+20*choice) 100 1)) (Pixel 0x000000)
 
 					 title screen
@@ -121,4 +123,4 @@ loop (MenuEnv screen choice) = do
 					       x = 500 - 333
 					       y = 640 - 327
 
-			reloop = loop $ MenuEnv screen choice
+			reloop = loop $ MenuEnv screen choice env

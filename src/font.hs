@@ -30,6 +30,8 @@
 
 module Font where
 
+import Resources (displaySurface)
+
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Image as IMG
 import Graphics.UI.SDL.TTF as TTF
@@ -39,6 +41,40 @@ fontDir = "/usr/share/fonts/TTF/"
 
 dejavu :: Int -> IO Font
 dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
+
+vera :: Int -> IO Font
+vera n = TTF.openFont (fontDir ++ "Vera.ttf") n
+
+liberation :: Int -> IO Font
+liberation n = TTF.openFont (fontDir ++ "LiberationSerif-Regular.ttf") n
+
+-- Affiche un texte centré.
+
+renderCenteredText :: Font -> String -> Color -> Surface -> Int -> IO ()
+renderCenteredText f s c scr y = do
+	(x, _) <- TTF.textSize f s
+	text <- TTF.tryRenderTextBlended f s c
+	displaySurface text scr (centered'x x) y
+	return ()
+
+	where 
+		centered'x x = 250 - (quot x 2)
+
+-- Police -> Lignes -> Couleur -> Ecran -> Coordonnées -> Espace entre chaque ligne -> Retour
+renderAlignedText :: Font -> [String] -> Color -> Surface -> (Int, Int) -> Int -> IO ()
+renderAlignedText _ [] _ _ _ _ = return ()
+renderAlignedText f (s:ss) c scr (x, y) step = do
+	(_, h) <- TTF.textSize f s
+	text <- TTF.tryRenderTextBlended f s c
+	displaySurface text scr y x
+
+	renderAlignedText f ss c scr (x, new'y h) step
+
+	where 
+		new'y h = y + h + step -- position + pas + taille du texte.
+		rect x y = Just (Rect x y 500 640)
+
+
 
 blanc = Color 0xFF 0xFF 0xFF
 noir = Color 0x00 0x00 0x00

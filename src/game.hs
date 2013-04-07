@@ -73,4 +73,5 @@ newGame = do
 	    putStrLn ("Vous jouez en mode " ++ (stringOfDiff $ difficulty) ++ ".")
 	    putStrLn "Admettons, vous avez fait une bonne partie. Entrez un score :"
 	    scoreStr <- getLine
-	    Score.writeScore (read scoreStr)
+	    --Score.writeScore (read scoreStr) env
+	    return ()

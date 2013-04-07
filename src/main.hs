@@ -28,8 +28,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-import Score
-import Game
 import Menu
 import Resources
 
@@ -46,9 +44,8 @@ main = withInit [InitVideo] $ do
 				enableUnicode True
 				
 				resources <- initRes
-				case resources of
-					Nothing  -> putStrLn "Resources cannot be loaded."
-					Just res -> Menu.loop $ MenuEnv screen 0 --res
+				Menu.loop $ MenuEnv screen 0 resources
+				
 		SDL.quit
 			
 		where
