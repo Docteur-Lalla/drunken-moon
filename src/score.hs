@@ -34,6 +34,7 @@ import Font
 import Resources
 
 import System.IO
+import System.Exit
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 import Graphics.UI.SDL.Image as IMG
@@ -62,7 +63,7 @@ showScores screen env = do
 		
 		evt <- SDL.waitEvent
 		case evt of
-			Quit                     -> return ()
+			Quit                     -> exitWith ExitSuccess
 			KeyDown (Keysym sym _ _) -> manageKey sym
 			_                        -> reloop
 		
@@ -195,7 +196,7 @@ dispScoreMenu screen choix = return ()
 
 manageChngName :: String -> Event -> IO (State, String)
 manageChngName str evt = case evt of
-	Quit -> return (Return, str)
+	Quit -> exitWith ExitSuccess
 	KeyDown (Keysym sym _ c) -> manageKey sym c
 	_ -> manageChngName str evt
 
@@ -216,7 +217,7 @@ manageChngName str evt = case evt of
 
 manageScoreMenu :: Int -> Event -> IO (State, Int)
 manageScoreMenu c evt = case evt of
-	Quit -> return (Return, c)
+	Quit -> exitWith ExitSuccess
 	KeyDown (Keysym sym _ _) -> manageKey sym
 	_ -> manageScoreMenu c evt
 	where
