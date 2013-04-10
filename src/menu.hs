@@ -68,14 +68,19 @@ displaySelector f step c scr = do
 				       x = 20
 				       y step h = 100 + (step + h) * c - 20
 
+-- La fonction display effectue l'affichage de l'écran de menu : fond, titre, sélecteur et menu.
 display :: Int -> Surface -> IO ()
 display choice screen = do
+                          -- D'abord le fond.
                           suika <- IMG.load "rc/images/Suika.jpeg"
 	                  SDL.fillRect screen Nothing pixel
 	                  SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
-		          title screen
+		          
+			  -- Puis le titre.
+			  title screen
 
-		          font' <- Font.dejavu 14
+		          -- Enfin, le menu et le sélecteur.
+			  font' <- Font.dejavu 14
 		          TTF.setFontStyle font' [ StyleBold ]
 
 		          Font.renderAlignedText font' choices color screen (80, 100) 10
@@ -102,7 +107,8 @@ loop screen choice = do
 		       where reloop = loop screen choice
 		             loopwith = loop screen
 
-		             manageKey key = case key of
+		             -- Gestion des évènements du menu par la fonction manageKey.
+			     manageKey key = case key of
 		                               SDLK_DOWN	-> if choice >= 2
 					                             then loopwith 0
 								     else loopwith (choice + 1)
