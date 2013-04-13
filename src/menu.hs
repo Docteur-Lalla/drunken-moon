@@ -28,16 +28,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Menu where
+module Menu (loop) where
 
 import Font
-<<<<<<< HEAD
 import Game
 import Score
-=======
-import Score (showScores)
-import Game (newGame)
->>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0
 import Resources
 
 import System.Exit
@@ -45,19 +40,10 @@ import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Image as IMG
 import Graphics.UI.SDL.TTF as TTF
 
-{- 
-Cré l'environnement du menu
-	* screen définit la fenètre
-	* choice définit le choix de l'utilisateur
-	* env définit les ressources (images/sons)
--}
-data Env = MenuEnv { screen :: Surface, choice :: Int, env :: Environment }
-
 title :: Surface -> IO ()
 title screen = do
                  font <- Font.vera 28
 		 TTF.setFontStyle font [ StyleBold ]
-<<<<<<< HEAD
 
                  Font.renderCenteredText font "Drunken Moon" color screen 35
 
@@ -135,77 +121,3 @@ loop screen env choice = do
 									    reloop
 								     2 -> return ()
 					       _		-> reloop
-=======
-		 
-		 font2 <- Font.dejavu 15
-		 
-		 text <- TTF.renderTextBlended font "Drunken Moon" color
-		 SDL.blitSurface text Nothing screen (Just rect)
-
-		 newgame <- TTF.renderTextBlended font2 "New Game" color
-		 voirscores <- TTF.renderTextBlended font2 "Scores" color
-		 quitter <- TTF.renderTextBlended font2 "Quitter" color
-
-		 SDL.blitSurface newgame Nothing screen (Just $ Rect 210 155 0 0)
-		 SDL.blitSurface voirscores Nothing screen (Just $ Rect 210 175 0 0)
-		 SDL.blitSurface quitter Nothing screen (Just $ Rect 210 195 0 0)
-		 return ()
-
-		 where color = Color 0x00 0x00 0x00
-		       rect = Rect 150 30 500 640
-		      
-		      
-{-		      
-	Display effectué en premier pour la récursion terminale,
-	les 'return ()' sont remplacés par des reloop (rappel avec même Env)
-	les autres cas sont des 'loop $ (nouvel Env)'
-		ou des appels d'autres étapes (zb: 'Score.showScores screen')
-		
-	revenir de Scores à Menu, ou quitter le menu reviendrait à envoyer 'return ()'
--}
-loop :: Env -> IO ()
-loop (MenuEnv screen choice env) = do
-
-		display screen env
-		SDL.flip screen
-		
-		event <- waitEvent
-		case event of
-		  Quit -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ 'q') -> return ()
-		  KeyDown (Keysym sym _ _) -> manageKey sym
-		  _			   -> reloop
-
-		where 
-			manageKey key = case key of
-					SDLK_DOWN -> if (choice >= 2)
-								then reloop
-								else loop $ MenuEnv screen (choice+1) env
-					SDLK_UP   -> if (choice <= 0)
-								then reloop
-								else loop $ MenuEnv screen (choice-1) env
-					SDLK_RETURN -> case choice of
-									0 -> do 
-										Game.newGame
-										reloop
-									1 -> do
-										Score.showScores screen env
-										reloop
-									2 -> return ()									
-					_            -> reloop
-
-			display screen env = do
-					 let suika = getResource "suika" env
-					 SDL.fillRect screen Nothing pixel
-					 displaySurface suika screen x y
-					 SDL.fillRect screen (Just (Rect 200 (172+20*choice) 100 1)) (Pixel 0x000000)
-
-					 title screen
-
-					 where color = Color 0x00 0x00 0x00
-					       pixel = Pixel 0xFFFFFF
-					       x = 500 - 333
-					       y = 640 - 327
-
-			reloop = loop $ MenuEnv screen choice env
->>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0

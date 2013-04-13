@@ -30,15 +30,8 @@
 
 module Font where
 
-<<<<<<< HEAD
 import Resources
 import Graphics.UI.SDL as SDL
-=======
-import Resources (displaySurface)
-
-import Graphics.UI.SDL as SDL
-import Graphics.UI.SDL.Image as IMG
->>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0
 import Graphics.UI.SDL.TTF as TTF
 
 fontDir :: String
@@ -59,20 +52,10 @@ liberation n = TTF.openFont (fontDir ++ "LiberationSerif-Regular.ttf") n
 dejavu :: Int -> IO Font
 dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
 
-<<<<<<< HEAD
-=======
-vera :: Int -> IO Font
-vera n = TTF.openFont (fontDir ++ "Vera.ttf") n
-
-liberation :: Int -> IO Font
-liberation n = TTF.openFont (fontDir ++ "LiberationSerif-Regular.ttf") n
-
->>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0
 -- Affiche un texte centré.
 
 renderCenteredText :: Font -> String -> Color -> Surface -> Int -> IO ()
 renderCenteredText f s c scr y = do
-<<<<<<< HEAD
 					(x, _) <- TTF.textSize f s
 					text <- TTF.tryRenderTextBlended f s c
 					Resources.displaySurface text scr (centered'x x) y
@@ -80,15 +63,6 @@ renderCenteredText f s c scr y = do
 					return ()
 					where
 						centered'x x = 250 - (quot x 2)
-=======
-	(x, _) <- TTF.textSize f s
-	text <- TTF.tryRenderTextBlended f s c
-	displaySurface text scr (centered'x x) y
-	return ()
-
-	where 
-		centered'x x = 250 - (quot x 2)
->>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0
 
 -- Police -> Lignes -> Couleur -> Ecran -> Coordonnées -> Espace entre chaque ligne -> Retour
 renderAlignedText :: Font -> [String] -> Color -> Surface -> (Int, Int) -> Int -> IO ()
@@ -96,23 +70,8 @@ renderAlignedText _ [] _ _ _ _ = return ()
 renderAlignedText f (s:ss) c scr (x, y) step = do
 	(_, h) <- TTF.textSize f s
 	text <- TTF.tryRenderTextBlended f s c
-<<<<<<< HEAD
 	Resources.displaySurface text scr x y
 
 	renderAlignedText f ss c scr (x, new'y h) step
 					       
 	where new'y h = y + h + step -- position + pas + taille du texte.
-=======
-	displaySurface text scr y x
-
-	renderAlignedText f ss c scr (x, new'y h) step
-
-	where 
-		new'y h = y + h + step -- position + pas + taille du texte.
-		rect x y = Just (Rect x y 500 640)
-
-
-
-blanc = Color 0xFF 0xFF 0xFF
-noir = Color 0x00 0x00 0x00
->>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0
