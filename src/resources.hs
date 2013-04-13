@@ -35,48 +35,48 @@ import Graphics.UI.SDL.Image as IMG
 
 -- Types de données pour gérer l'environnement
 
-newtype Res a = Res (String, a)
---type Sound = Res Music
---type SoundEnv = [Sound]
+newtype Resource a = Resource (String, a)
+--type Sound = Resource Music
+--type SoundEnvironment = [Sound]
 
-type Image = Res Surface
-type ImgEnv = [Image]
+type Image = Resource Surface
 
-type Env = ImgEnv
+type Environment dt = [Resource dt]
+type ImageEnvironment = Environment Surface
 
-addImage :: Image -> ImgEnv -> ImgEnv
-addImage (Res ("", _)) e = e
-addImage i@(Res (n, s)) e
+addImage :: Image -> ImageEnvironment -> ImageEnvironment
+addImage (Resource ("", _)) e = e
+addImage i@(Resource (n, s)) e
 	| exists n e = i : (rmImage n e)
 	| otherwise  = i : e
 	
-rmImage :: String -> ImgEnv -> ImgEnv
+rmImage :: String -> ImageEnvironment -> ImageEnvironment
 rmImage _ [] = []
 rmImage "" e = e
-rmImage id ((i@(Res (n, _))):xs)
+rmImage id ((i@(Resource (n, _))):xs)
 	| n == id   = xs
 	| otherwise = i:(rmImage id xs)
 
-exists :: String -> ImgEnv -> Bool
+exists :: String -> ImageEnvironment -> Bool
 exists _ [] = False
 exists "" _ = False
-exists id ((Res (n, _)):xs) = if n == id then True else exists id xs
+exists id ((Resource (n, _)):xs) = if n == id then True else exists id xs
 
-getImage :: ImgEnv -> String -> Maybe Surface
+getImage :: ImageEnvironment -> String -> Maybe Surface
 getImage [] _ = Nothing
 getImage _ "" = Nothing
-getImage ((Res (n, s)):xs) id
+getImage ((Resource (n, s)):xs) id
 	| id == n   = Just s
 	| otherwise = getImage xs id
 	
 -- Initialise l'environnement
 
-initEnv :: IO (Env)
-initEnv = do
+initImageEnvironment :: IO (ImageEnvironment)
+initImageEnvironment = do
 	suika <- IMG.load "rc/images/Suika.jpeg"
 	sun <- IMG.load "rc/images/sun.jpg"
 	
-	let env = addImage (Res ("suika", suika)) $ addImage (Res ("sun", sun)) []
+	let env = addImage (Resource ("suika", suika)) $ addImage (Resource ("sun", sun)) []
 	return env
 
 -- Fonction pour afficher une surface plus facilement

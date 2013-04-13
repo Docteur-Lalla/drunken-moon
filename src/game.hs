@@ -69,6 +69,6 @@ stringOfDiff Nothing = "Undefined"
 
 -- Crée une partie.
 
-newGame :: Surface -> Env -> IO ()
+newGame :: Surface -> ImageEnvironment -> IO ()
 newGame scr env = do
 	Score.writeScore scr env 1000

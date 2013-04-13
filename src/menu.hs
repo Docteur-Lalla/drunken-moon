@@ -51,14 +51,14 @@ title screen = do
 
 {-
     Boucle principale du menu.
-    Il affiche les éléments de celui-ci (titre, choix, image de fond et sélecteur)
+    Il affiche les éléments de celui-ci (titre, choix, image de fond et sélecteur).
 
     manageKey : gère les évènements clavier
     display : gère l'affichage
     displaySelector : affiche le sélecteur
  -}
 
-displaySelector :: Font -> Int -> Int -> Surface -> Env -> IO ()
+displaySelector :: Font -> Int -> Int -> Surface -> ImageEnvironment -> IO ()
 displaySelector f step c scr env = do
                                  (_, h) <- TTF.textSize f "Nyu"
 
@@ -71,7 +71,7 @@ displaySelector f step c scr env = do
 				       x = 20
 				       y step h = 100 + (step + h) * c - 20
 
-display :: Int -> Surface -> Env -> IO ()
+display :: Int -> Surface -> ImageEnvironment -> IO ()
 display choice screen env = do
                           let suika = getImage env "suika"
 	                  SDL.fillRect screen Nothing pixel
@@ -90,7 +90,7 @@ display choice screen env = do
 		                y = 640 - 327
 		                choices = ["Nouvelle partie", "Scores", "Quitter"]
 
-loop :: Surface -> Env -> Int -> IO ()
+loop :: Surface -> ImageEnvironment -> Int -> IO ()
 loop screen env choice = do
 		       display choice screen env
 	     	       SDL.flip screen

@@ -40,9 +40,9 @@ import Graphics.UI.SDL.Image as IMG
 import qualified Data.List as LIST
 import Data.Char
 
--- Ouvre le fichier rc/score et y lit les scores. La ByteString obtenue est coupée à chaque retour à la ligne.
-
+-- Ouvre le fichier rc/score et y lit les scores. La String obtenue est coupée à chaque retour à la ligne.
 scoreDir = "rc/score"
+
 getScoreLines :: IO [String]
 getScoreLines = withFile scoreDir ReadMode $ (\file -> do
 	contents <- hGetContents file
@@ -52,29 +52,25 @@ getScoreLines = withFile scoreDir ReadMode $ (\file -> do
 		  
 		  
 -- Affiche les scores enregistrés.
-
-showScores :: Surface -> Env -> IO ()
+showScores :: Surface -> ImageEnvironment -> IO ()
 showScores screen env = do
-
 		displayShowScores screen env
 		SDL.flip screen
 		
-		evt <- SDL.waitEvent
-		case evt of
+		event <- SDL.waitEvent
+		case event of
 			Quit                     -> exitWith ExitSuccess
 			KeyDown (Keysym sym _ _) -> manageKey sym
 			_                        -> reloop
 		
-		where
-			reloop = showScores screen env
+		where reloop = showScores screen env
 			
-			manageKey key =
-				case key of
+		      manageKey key = case key of
 					SDLK_q -> return ()
 					_   -> reloop
-						
--- Affiche l'écran des scores
-displayShowScores :: Surface -> Env -> IO ()
+
+-- Affiche l'écran des scores.
+displayShowScores :: Surface -> ImageEnvironment -> IO ()
 displayShowScores scr env = do
 	SDL.fillRect scr Nothing pblanc
 	let suika = getImage env "suika"
@@ -82,31 +78,28 @@ displayShowScores scr env = do
 	
 	displayScoreLines scr
 	
-	where
-		pblanc = Pixel 0xFFFFFF
+	where pblanc = Pixel 0xFFFFFF
 					
-		x = 500 - 333
-		y = 640 - 327
+	      x = 500 - 333
+	      y = 640 - 327
 
---Affiche les scores dans l'ordre décroissant		
+--Affiche les scores dans l'ordre décroissant.
 displayScoreLines :: Surface -> IO ()
 displayScoreLines scr = do
 	lines <- getScoreLines
 	
-	-- Trie le tableau de scores et affiche les lignes une par une
+	-- Trie le tableau de scores et affiche les lignes une par une.
 	let liste_trie = sortS $ map words lines
 	forEach liste_trie dispLine 0
 	
-	where
-		-- Trie le tableau
-		sortS [] = []
-		sortS (pivot@(s1:[_]):xs) = gauche ++ [pivot] ++ droite
-			where
-				gauche = sortS [x | x@(s2:[_]) <- xs, (read s2 :: Int) > (read s1 :: Int)]
-				droite = sortS [x | x@(s2:[_]) <- xs, (read s2 :: Int) <= (read s1 :: Int)]
+	where sortS [] = [] -- Trie le tableau.
+	      sortS (pivot@(s1:[_]):xs) =
+	        gauche ++ [pivot] ++ droite
+	        where gauche = sortS [x | x@(s2:[_]) <- xs, (read s2 :: Int) > (read s1 :: Int)]
+		      droite = sortS [x | x@(s2:[_]) <- xs, (read s2 :: Int) <= (read s1 :: Int)]
 		
-		-- Affiche une ligne avec l'offset 'i'
-		dispLine (s:[n]) i = do
+		-- Affiche une ligne selon sa place dans la liste (offset vertical 'i').
+	      dispLine (s:[n]) i = do
 			font <- Font.dejavu 9
 			tname <- TTF.tryRenderTextBlended font n noir
 			tscore <- TTF.tryRenderTextBlended font s noir
@@ -115,22 +108,20 @@ displayScoreLines scr = do
 			Resources.displaySurface tname scr xn (y h i)
 			Resources.displaySurface tscore scr (xs w) (y h i)
 			
-			where
-				xn = 100
-				xs w = 500 - 100 - w
-				y h i = 150 + (h + 2) * i
+			where xn = 100
+			      xs w = 500 - 100 - w
+			      y h i = 150 + (h + 2) * i
 		
-		-- Applique la fonction f à chaque élément d'un tableau avec l'index 'i' en paramètre supplémentaire
-		forEach [] _ _     = return ()
-		forEach (x:xs) f i = do
-			f x i
-			forEach xs f (i+1)	
+	      -- Applique la fonction f à chaque élément d'un tableau avec l'index 'i' en paramètre supplémentaire
+	      forEach [] _ _     = return ()
+	      forEach (x:xs) f i = do
+			             f x i
+			             forEach xs f (i+1)	
 			
 	
 		
 --Enregistre un nouveau score.
-
--- Etats de la fonction (menu | écrire | accepter pseudo | quitter)
+-- Etats de la fonction (menu | écrire | accepter pseudo | quitter).
 data State
 	= Writing String
 	| Menu Int
@@ -141,37 +132,37 @@ data State
 writeScore = writeScore' "" (Writing "")
 
 -- writeScore' :: Ecran -> Environnement -> Score -> Nom -> Etat -> IO ()
-writeScore' :: String -> State -> Surface -> Env -> Int -> IO ()
+writeScore' :: String -> State -> Surface -> ImageEnvironment -> Int -> IO ()
 writeScore' name state scr env score = do
 
-	--Affiche le menu de sauvegarde de score
+	-- Affiche le menu de sauvegarde de score.
 	displayWriteScore scr env state score name
 	SDL.flip scr
-	--Agis en fonction de l'état actuel
-	case state of
-		Menu c -> reloopMenu c
-		Writing _ -> reloopWriting
-		Save -> saveScore score name
-		Abort -> return ()
-		
-	where
-		reloopMenu c = do
-			ret <- manageMenuEvt c
-			writeScore' name ret scr env score
-			
-		reloopWriting = do
-			ret <- manageWritingEvt name
-			case ret of
-				Writing newname -> writeScore' newname ret scr env score
-				Menu c -> writeScore' name ret scr env score
 
--- Affiche l'écran, en fonction de l'état (soit on écrit, soit on est sur le menu)
-displayWriteScore :: Surface -> Env -> State -> Int -> String -> IO ()
+	-- Agit en fonction de l'état actuel.
+	case state of
+	  Menu c -> reloopMenu c
+	  Writing _ -> reloopWriting
+	  Save -> saveScore score name
+	  Abort -> return ()
+		
+	where reloopMenu c = do
+			       ret <- manageMenuEvent c
+			       writeScore' name ret scr env score
+			
+	      reloopWriting = do
+			        ret <- manageWritingEvent name
+			        case ret of
+				  Writing newname -> writeScore' newname ret scr env score
+				  Menu c -> writeScore' name ret scr env score
+
+-- Affiche l'écran, en fonction de l'état (soit on écrit, soit on est sur le menu).
+displayWriteScore :: Surface -> ImageEnvironment -> State -> Int -> String -> IO ()
 displayWriteScore scr env state score name = do
 	SDL.fillRect scr Nothing pblanc
 	displaySurface (getImage env "suika") scr x y
 	
-	-- Petit message et menu si on y est, sinon pas de menu
+	-- Petit message et menu si on y est, sinon pas de menu.
 	fontMsg <- vera 18
 	case state of
 		Writing _ -> Font.renderCenteredText fontMsg "Entrez votre pseudo." noir scr 20
@@ -180,19 +171,18 @@ displayWriteScore scr env state score name = do
 			displayWritingMenu scr env c
 		_ -> return ()
 			
-	-- Affiche le score et le pseudo
+	-- Affiche le score et le pseudo.
 	fontScore <- dejavu 15
 	Font.renderAlignedText fontScore scoreetnom noir scr (150, 50) 5
 	
-	where
-		pblanc = Pixel 0xFFFFFF
-		scoreetnom = ["Score : "++(show score), "Pseudo : "++name]
+	where pblanc = Pixel 0xFFFFFF
+	      scoreetnom = ["Score : "++(show score), "Pseudo : "++name]
 		
-		x = 500 - 333
-		y = 640 - 327
+	      x = 500 - 333
+	      y = 640 - 327
 		
--- Affiche le menu
-displayWritingMenu :: Surface -> Env -> Int -> IO ()
+-- Affiche le menu.
+displayWritingMenu :: Surface -> ImageEnvironment -> Int -> IO ()
 displayWritingMenu scr env c = do	
 	font' <- Font.dejavu 14
 	TTF.setFontStyle font' [ StyleBold ]
@@ -200,11 +190,10 @@ displayWritingMenu scr env c = do
 	Font.renderAlignedText font' choices noir scr (80, 100) 10
 	displaySelector font' 10 c scr env
 
-	where
-		choices = ["Renommer", "Sauvegarder", "Quitter"]
+	where choices = ["Renommer", "Sauvegarder", "Quitter"]
 		
--- Affiche le sélecteur du menu
-displaySelector :: Font -> Int -> Int -> Surface -> Env -> IO ()
+-- Affiche le sélecteur du menu.
+displaySelector :: Font -> Int -> Int -> Surface -> ImageEnvironment -> IO ()
 displaySelector f step c scr env = do
                                  (_, h) <- TTF.textSize f "Nyu"
 
@@ -217,44 +206,43 @@ displaySelector f step c scr env = do
 				       x = 20
 				       y step h = 100 + (step + h) * c - 20
 
--- gère les évènements du menu
-manageMenuEvt :: Int -> IO (State)
-manageMenuEvt c = do
-	evt <- SDL.waitEvent
-	case evt of
+-- gère les évènements du menu.
+manageMenuEvent :: Int -> IO (State)
+manageMenuEvent c = do
+	event <- SDL.waitEvent
+	case event of
 		Quit -> exitWith ExitSuccess
 		KeyDown (Keysym sym _ _) -> manageKey sym
-		_ -> manageMenuEvt c
+		_ -> manageMenuEvent c
 		
-	where
-		manageKey sym = case sym of
-			SDLK_UP -> if c <= 0 then return $ Menu 2 else return $ Menu (c-1)
-			SDLK_DOWN -> if c >= 2 then return $ Menu 0 else return $ Menu (c+1)
-			SDLK_RETURN -> case c of
-				0 -> return (Writing "")
-				1 -> return Save
-				2 -> return Abort
-				_ -> manageMenuEvt c
-			_ -> manageMenuEvt c
+	where manageKey sym = case sym of
+	 		        SDLK_UP -> if c <= 0 then return $ Menu 2 else return $ Menu (c-1)
+			        SDLK_DOWN -> if c >= 2 then return $ Menu 0 else return $ Menu (c+1)
+			        SDLK_RETURN -> case c of
+				                 0 -> return (Writing "")
+			 	                 1 -> return Save
+				                 2 -> return Abort
+				                 _ -> manageMenuEvent c
+			        _ -> manageMenuEvent c
 
--- gère les évènementslors de la saisie du pseudo
-manageWritingEvt :: String -> IO (State)
-manageWritingEvt name = do
-	evt <- SDL.waitEvent
-	case evt of
+-- Gère les évènementslors de la saisie du pseudo.
+manageWritingEvent :: String -> IO (State)
+manageWritingEvent name = do
+	event <- SDL.waitEvent
+	case event of
 		Quit -> exitWith ExitSuccess
 		KeyDown (Keysym sym _ c) -> return $ manageKey sym c
-		_ -> manageWritingEvt name
+		_ -> manageWritingEvent name
 		
-	where
-		manageKey sym c = case sym of
-			SDLK_RETURN -> Menu 0
-			SDLK_BACKSPACE -> Writing (rmlst name)
-			_ -> if isAlphaNum c then Writing (name++[c]) else Writing name
+	where manageKey sym c = case sym of
+	 		          SDLK_RETURN -> Menu 0
+			          SDLK_BACKSPACE -> Writing (rmlst name)
+			          _ -> if isAlphaNum c then Writing (name++[c]) else Writing name
 			
-		rmlst [] = []
-		rmlst [x] = []
-		rmlst (x:xs) = x : (rmlst xs)
+	      rmlst [] = []
+	      rmlst [x] = []
+	      rmlst (x:xs) = x : (rmlst xs)
 
--- sauvegarde le score dans le fichier
+-- Sauvegarde le score dans le fichier.
+saveScore :: Int -> String -> IO ()
 saveScore a b = appendFile scoreDir ((show a)++" "++b)

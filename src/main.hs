@@ -49,6 +49,6 @@ main = withInit [InitVideo] $
 			SDL.enableKeyRepeat 500 20
 	                enableUnicode True
 	                
-	                env <- initEnv
+	                env <- initImageEnvironment
 	                Menu.loop screen env 0
 			SDL.quit
