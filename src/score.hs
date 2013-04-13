@@ -93,13 +93,17 @@ displayShowScores scr env = do
 	      x = 500 - 333
 	      y = 640 - 327
 
+compareScores :: (String, String) -> (String, String) -> Ordering
+compareScores (_, n1) (_, n2) = compare (read n1 :: Int) (read n2 :: Int)
+
 --Affiche les scores dans l'ordre décroissant.
 displayScoreLines :: Surface -> IO ()
 displayScoreLines scr = do
                           lines <- getScoreLines
 			  
 			  -- Chaque entrée de la liste est de la forme (pseudo, score).
-			  scores <- return (toStringPair $ map words lines)
+			  scores' <- return (toStringPair $ map words lines)
+			  let scores = List.reverse $ List.sortBy compareScores scores' -- Trie les scores.
 
 			  let wm = getMaxWidth (scores ++ [minlen] ) -- La taile de ligne la plus longue.
 			  formatted <- return $ fillLines wm scores
