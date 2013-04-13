@@ -30,11 +30,15 @@
 
 module Font where
 
+import Resources
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 
 fontDir :: String
 fontDir = "/usr/share/fonts/TTF/"
+
+noir = Color 0 0 0
+blanc = Color 0xFF 0xFF 0xFF
 
 -- Vera, Liberation et DejaVu sont des polices de caractère.
 -- Ces fonctions permettent d'ouvrir les-dites polices plus élégamment.
@@ -52,28 +56,22 @@ dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
 
 renderCenteredText :: Font -> String -> Color -> Surface -> Int -> IO ()
 renderCenteredText f s c scr y = do
-                                   (x, _) <- TTF.textSize f s
-				   text <- TTF.renderTextBlended f s c
-                                   SDL.blitSurface text Nothing scr (rect x)
-
-				   return ()
-
-				   where rect x = Just (Rect (centered'x x) y 500 640)
-				         centered'x x = 250 - (quot x 2)
+					(x, _) <- TTF.textSize f s
+					text <- TTF.tryRenderTextBlended f s c
+					Resources.displaySurface text scr (centered'x x) y
+					
+					return ()
+					where
+						centered'x x = 250 - (quot x 2)
 
 -- Police -> Lignes -> Couleur -> Ecran -> Coordonnées -> Espace entre chaque ligne -> Retour
 renderAlignedText :: Font -> [String] -> Color -> Surface -> (Int, Int) -> Int -> IO ()
 renderAlignedText _ [] _ _ _ _ = return ()
 renderAlignedText f (s:ss) c scr (x, y) step = do
-                                                 (_, h) <- TTF.textSize f s
-						 text <- TTF.tryRenderTextBlended f s c
-						 case text of
-						   Nothing	-> return ()
-						   Just t	-> do
-						                     SDL.blitSurface t Nothing scr (rect x y)
-								     return ()
+	(_, h) <- TTF.textSize f s
+	text <- TTF.tryRenderTextBlended f s c
+	Resources.displaySurface text scr x y
 
-						 renderAlignedText f ss c scr (x, new'y h) step
+	renderAlignedText f ss c scr (x, new'y h) step
 					       
-					       where new'y h = y + h + step -- position + pas + taille du texte.
-					             rect x y = Just (Rect x y 500 640)
+	where new'y h = y + h + step -- position + pas + taille du texte.

@@ -28,13 +28,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Game (newGame, loop) where
+module Game (newGame) where
 
 import Score (writeScore)
-
-import System.Exit
+import Resources
 import Graphics.UI.SDL as SDL
-import Graphics.UI.SDL.TTF as TTF
 
 -- Fonction getDifficulty demandant la difficulté au joueur.
 
@@ -71,34 +69,6 @@ stringOfDiff Nothing = "Undefined"
 
 -- Crée une partie.
 
-newGame :: IO ()
-newGame = do
-            difficulty <- getDifficulty
-	    putStrLn ("Vous jouez en mode " ++ (stringOfDiff $ difficulty) ++ ".")
-	    putStrLn "Admettons, vous avez fait une bonne partie. Entrez un score :"
-	    scoreStr <- getLine
-	    Score.writeScore (read scoreStr)
-
--- Boucle principale de l'application graphique.
-
-loop :: Surface -> IO ()
-loop screen = do
-                event <- waitEvent
-		case event of
-		  Quit -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
-		  KeyDown (Keysym _ _ key) -> manageKey key
-		  _			   -> return ()
-		display screen
-		SDL.flip screen
-		loop screen
-
-		where manageKey key = return ()
-
-		      display screen = do
-		                         font <- TTF.openFont dejavu 9
-					 text <- TTF.renderTextSolid font "Voici Drunken Moon" color
-					 SDL.blitSurface text Nothing screen (Just (Rect 350 0 500 640))
-
-					 where color = Color 0xFF 0xFF 0xFF
-					       dejavu = "/usr/share/fonts/TTF/DejaVuSerif.ttf"
+newGame :: Surface -> Env -> IO ()
+newGame scr env = do
+	Score.writeScore scr env 1000

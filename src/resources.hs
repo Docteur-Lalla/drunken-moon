@@ -28,27 +28,58 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-import Score
-import Game
-import Menu
-import Resources
+module Resources where
 
 import Graphics.UI.SDL as SDL
-import Graphics.UI.SDL.TTF as TTF
+import Graphics.UI.SDL.Image as IMG
 
--- Fonction main servant de point de départ au programme.
+-- Types de données pour gérer l'environnement
 
-main = withInit [InitVideo] $
-          do
-	    ttf <- TTF.init
-	    case ttf of
-	      False -> putStrLn "SDL_TTF cannot be initialized."
-	      True -> do
-	                screen <- SDL.setVideoMode 500 640 32 [HWSurface]
-	                SDL.setCaption "Drunken Moon" "Drunken Moon"
-			SDL.enableKeyRepeat 500 20
-	                enableUnicode True
-	                
-	                env <- initEnv
-	                Menu.loop screen env 0
-			SDL.quit
+newtype Res a = Res (String, a)
+--type Sound = Res Music
+--type SoundEnv = [Sound]
+
+type Image = Res Surface
+type ImgEnv = [Image]
+
+type Env = ImgEnv
+
+addImage :: Image -> ImgEnv -> ImgEnv
+addImage (Res ("", _)) e = e
+addImage i@(Res (n, s)) e
+	| exists n e = i : (rmImage n e)
+	| otherwise  = i : e
+	
+rmImage :: String -> ImgEnv -> ImgEnv
+rmImage _ [] = []
+rmImage "" e = e
+rmImage id ((i@(Res (n, _))):xs)
+	| n == id   = xs
+	| otherwise = i:(rmImage id xs)
+
+exists :: String -> ImgEnv -> Bool
+exists _ [] = False
+exists "" _ = False
+exists id ((Res (n, _)):xs) = if n == id then True else exists id xs
+
+getImage :: ImgEnv -> String -> Maybe Surface
+getImage [] _ = Nothing
+getImage _ "" = Nothing
+getImage ((Res (n, s)):xs) id
+	| id == n   = Just s
+	| otherwise = getImage xs id
+	
+-- Initialise l'environnement
+
+initEnv :: IO (Env)
+initEnv = do
+	suika <- IMG.load "rc/images/Suika.jpeg"
+	sun <- IMG.load "rc/images/sun.jpg"
+	
+	let env = addImage (Res ("suika", suika)) $ addImage (Res ("sun", sun)) []
+	return env
+
+-- Fonction pour afficher une surface plus facilement
+displaySurface :: (Maybe Surface) -> Surface -> Int -> Int -> IO Bool
+displaySurface Nothing _ _ _ = return False
+displaySurface (Just src) dst x y = SDL.blitSurface src Nothing dst (Just (Rect x y 0 0))

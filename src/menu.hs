@@ -31,6 +31,9 @@
 module Menu (loop) where
 
 import Font
+import Game
+import Score
+import Resources
 
 import System.Exit
 import Graphics.UI.SDL as SDL
@@ -55,12 +58,12 @@ title screen = do
     displaySelector : affiche le sélecteur
  -}
 
-displaySelector :: Font -> Int -> Int -> Surface -> IO ()
-displaySelector f step c scr = do
+displaySelector :: Font -> Int -> Int -> Surface -> Env -> IO ()
+displaySelector f step c scr env = do
                                  (_, h) <- TTF.textSize f "Nyu"
 
-                                 select <- IMG.load "rc/images/sun.jpg"
-				 SDL.blitSurface select Nothing scr $ Just (position step h)
+                                 let select = getImage env "sun"
+				 Resources.displaySurface select scr x (y step h)
 				 
 				 return ()
 
@@ -68,23 +71,18 @@ displaySelector f step c scr = do
 				       x = 20
 				       y step h = 100 + (step + h) * c - 20
 
--- La fonction display effectue l'affichage de l'écran de menu : fond, titre, sélecteur et menu.
-display :: Int -> Surface -> IO ()
-display choice screen = do
-                          -- D'abord le fond.
-                          suika <- IMG.load "rc/images/Suika.jpeg"
+display :: Int -> Surface -> Env -> IO ()
+display choice screen env = do
+                          let suika = getImage env "suika"
 	                  SDL.fillRect screen Nothing pixel
-	                  SDL.blitSurface suika Nothing screen (Just (Rect x y 500 640))
-		          
-			  -- Puis le titre.
-			  title screen
+	                  Resources.displaySurface suika screen x y
+		          title screen
 
-		          -- Enfin, le menu et le sélecteur.
-			  font' <- Font.dejavu 14
+		          font' <- Font.dejavu 14
 		          TTF.setFontStyle font' [ StyleBold ]
 
 		          Font.renderAlignedText font' choices color screen (80, 100) 10
-			  displaySelector font' 10 choice screen
+			  displaySelector font' 10 choice screen env
 
                           where color = Color 0x00 0x00 0x00
 		                pixel = Pixel 0xFFFFFF
@@ -92,9 +90,9 @@ display choice screen = do
 		                y = 640 - 327
 		                choices = ["Nouvelle partie", "Scores", "Quitter"]
 
-loop :: Surface -> Int -> IO ()
-loop screen choice = do
-		       display choice screen
+loop :: Surface -> Env -> Int -> IO ()
+loop screen env choice = do
+		       display choice screen env
 	     	       SDL.flip screen
 
                        event <- waitEvent
@@ -104,11 +102,10 @@ loop screen choice = do
 		         KeyDown (Keysym key _ _) -> manageKey key
 		         _			   -> reloop
 
-		       where reloop = loop screen choice
-		             loopwith = loop screen
+		       where reloop = loop screen env choice
+		             loopwith = loop screen env
 
-		             -- Gestion des évènements du menu par la fonction manageKey.
-			     manageKey key = case key of
+		             manageKey key = case key of
 		                               SDLK_DOWN	-> if choice >= 2
 					                             then loopwith 0
 								     else loopwith (choice + 1)
@@ -117,10 +114,10 @@ loop screen choice = do
 								     else loopwith (choice - 1)
 					       SDLK_RETURN	-> case choice of
 					                             0 -> do
-								            -- Game.newGame
-									    reloop
+										Game.newGame screen env
+										reloop
 								     1 -> do
-								            -- Score.showScores
+								            Score.showScores screen env
 									    reloop
 								     2 -> return ()
 					       _		-> reloop
