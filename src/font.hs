@@ -37,8 +37,8 @@ import Graphics.UI.SDL.TTF as TTF
 fontDir :: String
 fontDir = "/usr/share/fonts/TTF/"
 
-noir = Color 0 0 0
-blanc = Color 0xFF 0xFF 0xFF
+black = Color 0 0 0
+white = Color 0xFF 0xFF 0xFF
 
 -- Vera, Liberation et DejaVu sont des polices de caractère.
 -- Ces fonctions permettent d'ouvrir les-dites polices plus élégamment.
@@ -51,6 +51,9 @@ liberation n = TTF.openFont (fontDir ++ "LiberationSerif-Regular.ttf") n
 
 dejavu :: Int -> IO Font
 dejavu n = TTF.openFont (fontDir ++ "DejaVuSerif.ttf") n
+
+veramono :: Int -> IO Font
+veramono n = TTF.openFont (fontDir ++ "VeraMono.ttf") n
 
 -- Affiche un texte centré.
 

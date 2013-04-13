@@ -37,7 +37,7 @@ import System.IO
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 import Graphics.UI.SDL.Image as IMG
-import qualified Data.List as LIST
+import qualified Data.List as List
 import Data.Char
 
 -- Ouvre le fichier rc/score et y lit les scores. La String obtenue est coupée à chaque retour à la ligne.
@@ -69,13 +69,23 @@ showScores screen env = do
 					SDLK_q -> return ()
 					_   -> reloop
 
+title :: Surface -> IO ()
+title screen = do
+                 font <- Font.vera 28
+		 TTF.setFontStyle font [ StyleBold ]
+
+                 Font.renderCenteredText font "Scores" color screen 35
+
+		 where color = Color 0x00 0x00 0x00
+
 -- Affiche l'écran des scores.
 displayShowScores :: Surface -> ImageEnvironment -> IO ()
 displayShowScores scr env = do
 	SDL.fillRect scr Nothing pblanc
 	let suika = getImage env "suika"
 	Resources.displaySurface suika scr x y
-	
+
+        title scr
 	displayScoreLines scr
 	
 	where pblanc = Pixel 0xFFFFFF
@@ -86,40 +96,47 @@ displayShowScores scr env = do
 --Affiche les scores dans l'ordre décroissant.
 displayScoreLines :: Surface -> IO ()
 displayScoreLines scr = do
-	lines <- getScoreLines
-	
-	-- Trie le tableau de scores et affiche les lignes une par une.
-	let liste_trie = sortS $ map words lines
-	forEach liste_trie dispLine 0
-	
-	where sortS [] = [] -- Trie le tableau.
-	      sortS (pivot@(s1:[_]):xs) =
-	        gauche ++ [pivot] ++ droite
-	        where gauche = sortS [x | x@(s2:[_]) <- xs, (read s2 :: Int) > (read s1 :: Int)]
-		      droite = sortS [x | x@(s2:[_]) <- xs, (read s2 :: Int) <= (read s1 :: Int)]
-		
-		-- Affiche une ligne selon sa place dans la liste (offset vertical 'i').
-	      dispLine (s:[n]) i = do
-			font <- Font.dejavu 9
-			tname <- TTF.tryRenderTextBlended font n noir
-			tscore <- TTF.tryRenderTextBlended font s noir
-			
-			(w, h) <- TTF.textSize font s
-			Resources.displaySurface tname scr xn (y h i)
-			Resources.displaySurface tscore scr (xs w) (y h i)
-			
-			where xn = 100
-			      xs w = 500 - 100 - w
-			      y h i = 150 + (h + 2) * i
-		
-	      -- Applique la fonction f à chaque élément d'un tableau avec l'index 'i' en paramètre supplémentaire
-	      forEach [] _ _     = return ()
-	      forEach (x:xs) f i = do
-			             f x i
-			             forEach xs f (i+1)	
-			
-	
-		
+                          lines <- getScoreLines
+			  
+			  -- Chaque entrée de la liste est de la forme (pseudo, score).
+			  scores <- return (toStringPair $ map words lines)
+
+			  let wm = getMaxWidth (scores ++ [minlen] ) -- La taile de ligne la plus longue.
+			  formatted <- return $ fillLines wm scores
+
+			  -- Affichage des scores avec la police à largeur fixe VeraMono.
+			  font <- Font.veramono 12
+			  (char_width, _) <- TTF.textSize font " "
+
+			  Font.renderAlignedText font formatted Font.black scr (coords char_width wm) 10
+
+			  where getMaxWidth :: [ (String, String) ] -> Int
+			        getMaxWidth [] = 0
+				getMaxWidth ((p, n):xs) = let len = List.length (p ++ n)
+							  in if len > next
+							    then len
+							    else next
+
+							  where next = getMaxWidth xs
+
+				minlen = (replicate 20 ' ', replicate 30 ' ') -- Taille minimale (20 et 30 chars).
+
+				-- Crée les lignes à afficher.
+				fillLines :: Int -> [ (String, String) ] -> [ String ]
+				fillLines _ [] = []
+				fillLines len ((p, n):xs) = let diff = len - List.length (p ++ n) - 1
+				                            in let format = (p ++ replicate diff ' ' ++ n)
+
+							    in format : fillLines len xs
+
+				-- Coordonnées d'affichage de la première ligne de score.
+				coords cw wm = let size = wm * cw
+				                 in (quot (500 - size) 2, 150)
+
+				toStringPair :: [[String]] -> [ (String, String) ]
+				toStringPair [] = []
+				toStringPair ((n:p:_):xs) = (p, n) : toStringPair xs
+
 --Enregistre un nouveau score.
 -- Etats de la fonction (menu | écrire | accepter pseudo | quitter).
 data State
@@ -165,15 +182,15 @@ displayWriteScore scr env state score name = do
 	-- Petit message et menu si on y est, sinon pas de menu.
 	fontMsg <- vera 18
 	case state of
-		Writing _ -> Font.renderCenteredText fontMsg "Entrez votre pseudo." noir scr 20
+		Writing _ -> Font.renderCenteredText fontMsg "Entrez votre pseudo." black scr 20
 		Menu c -> do
-			Font.renderCenteredText fontMsg "Que faites vous?" noir scr 20
+			Font.renderCenteredText fontMsg "Que faites vous?" black scr 20
 			displayWritingMenu scr env c
 		_ -> return ()
 			
 	-- Affiche le score et le pseudo.
 	fontScore <- dejavu 15
-	Font.renderAlignedText fontScore scoreetnom noir scr (150, 50) 5
+	Font.renderAlignedText fontScore scoreetnom black scr (150, 50) 5
 	
 	where pblanc = Pixel 0xFFFFFF
 	      scoreetnom = ["Score : "++(show score), "Pseudo : "++name]
@@ -187,7 +204,7 @@ displayWritingMenu scr env c = do
 	font' <- Font.dejavu 14
 	TTF.setFontStyle font' [ StyleBold ]
 	
-	Font.renderAlignedText font' choices noir scr (80, 100) 10
+	Font.renderAlignedText font' choices black scr (80, 100) 10
 	displaySelector font' 10 c scr env
 
 	where choices = ["Renommer", "Sauvegarder", "Quitter"]
