@@ -33,6 +33,7 @@ module Resources where
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Image as IMG
 
+<<<<<<< HEAD
 -- Types de données pour gérer l'environnement
 
 newtype Res a = Res (String, a)
@@ -81,5 +82,55 @@ initEnv = do
 
 -- Fonction pour afficher une surface plus facilement
 displaySurface :: (Maybe Surface) -> Surface -> Int -> Int -> IO Bool
+=======
+-- Gestion de l'environnement
+
+type MapSurface = (String, Surface)
+type Environment = [MapSurface]
+
+getResource :: String -> Environment -> Maybe Surface
+getResource id [] = Nothing
+getResource id ((name, surface):xs)
+	| id == name = Just surface
+	| otherwise  = getResource id xs
+	
+exists :: String -> Environment -> Bool
+exists _ [] = False
+exists id ((name, _):xs)
+	| id == name = True
+	| otherwise  = exists id xs
+	
+addResource :: String -> Surface -> Environment -> Environment
+addResource "" _ e = e
+addResource id s e
+	| exists id e = e
+	| otherwise   = (id, s) : e
+
+rmResource :: String -> Environment -> Environment
+rmResource _ [] = []
+rmResource id (x:xs)
+	| id == (fst x) = rmResource id xs
+	| otherwise     = x : rmResource id xs
+
+updateResource :: String -> Surface -> Environment -> Environment
+updateResource "" _ e = e
+updateResource id s e
+	| exists id e = (id, s) : new
+	| otherwise = (id, s) : e
+	where
+		new = rmResource id e
+			
+initRes :: IO Environment
+initRes = do
+	suika <- IMG.load "rc/images/Suika.jpeg"
+	sun <- IMG.load "rc/images/sun.jpg"
+	
+	
+	return $ addResource "sun" sun $ addResource "suika" suika []
+		
+-- Pourquoi pas une de display ?
+
+displaySurface :: Maybe Surface -> Surface -> Int -> Int -> IO Bool
+>>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0
 displaySurface Nothing _ _ _ = return False
 displaySurface (Just src) dst x y = SDL.blitSurface src Nothing dst (Just (Rect x y 0 0))

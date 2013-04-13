@@ -28,14 +28,13 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-import Score
-import Game
 import Menu
 import Resources
 
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 
+<<<<<<< HEAD
 -- Fonction main servant de point de départ au programme.
 
 main = withInit [InitVideo] $
@@ -52,3 +51,24 @@ main = withInit [InitVideo] $
 	                env <- initEnv
 	                Menu.loop screen env 0
 			SDL.quit
+=======
+main = withInit [InitVideo] $ do
+		ttf <- TTF.init
+		case ttf of
+			False -> putStrLn "SDL_TTF cannot be initialized."
+			True -> do
+				screen <- SDL.setVideoMode 500 640 32 [HWSurface]
+				SDL.setCaption "Drunken Moon" "Drunken Moon"
+				enableUnicode True
+				
+				resources <- initRes
+				Menu.loop $ MenuEnv screen 0 resources
+				
+		SDL.quit
+			
+		where
+			x = 200
+			y = 150
+			w = 100
+			h = 25
+>>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0

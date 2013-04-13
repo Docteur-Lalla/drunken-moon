@@ -69,6 +69,17 @@ stringOfDiff Nothing = "Undefined"
 
 -- Crée une partie.
 
+<<<<<<< HEAD
 newGame :: Surface -> Env -> IO ()
 newGame scr env = do
 	Score.writeScore scr env 1000
+=======
+newGame :: IO ()
+newGame = do
+            difficulty <- getDifficulty
+	    putStrLn ("Vous jouez en mode " ++ (stringOfDiff $ difficulty) ++ ".")
+	    putStrLn "Admettons, vous avez fait une bonne partie. Entrez un score :"
+	    scoreStr <- getLine
+	    --Score.writeScore (read scoreStr) env
+	    return ()
+>>>>>>> dacbbcebf28e8860479ede607fcf3318ce74eab0
