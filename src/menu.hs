@@ -60,9 +60,9 @@ title screen = do
 
 displaySelector :: Font -> Int -> Int -> Surface -> ImageEnvironment -> IO ()
 displaySelector f step c scr env = do
-                                 (_, h) <- TTF.textSize f "Nyu"
+                                 (_, h) <- TTF.textSize f "Nyu" -- Récupère la hauteur (en pixel) du texte.
 
-                                 let select = getImage env "sun"
+                                 let select = getImage env "sun" -- Charge le sélecteur (soleil) en mémoire.
 				 Resources.displaySurface select scr x (y step h)
 				 
 				 return ()
@@ -73,14 +73,19 @@ displaySelector f step c scr env = do
 
 display :: Int -> Surface -> ImageEnvironment -> IO ()
 display choice screen env = do
+			  -- Affichage de Suika en fond.
                           let suika = getImage env "suika"
 	                  SDL.fillRect screen Nothing pixel
 	                  Resources.displaySurface suika screen x y
+
+			  -- Affichage du titre.
 		          title screen
 
+			  -- Préparation de la police d'écriture du menu.
 		          font' <- Font.dejavu 14
 		          TTF.setFontStyle font' [ StyleBold ]
 
+			  -- Affichage du menu.
 		          Font.renderAlignedText font' choices color screen (80, 100) 10
 			  displaySelector font' 10 choice screen env
 
@@ -90,11 +95,14 @@ display choice screen env = do
 		                y = 640 - 327
 		                choices = ["Nouvelle partie", "Scores", "Quitter"]
 
+-- Boucle principale du menu (appelée par la fonction main).
 loop :: Surface -> ImageEnvironment -> Int -> IO ()
 loop screen env choice = do
+		       -- Affichage du menu.
 		       display choice screen env
 	     	       SDL.flip screen
 
+		       -- Gestion des évènements clavier.
                        event <- waitEvent
 		       case event of
 		         Quit -> exitWith ExitSuccess
@@ -105,6 +113,7 @@ loop screen env choice = do
 		       where reloop = loop screen env choice
 		             loopwith = loop screen env
 
+			     -- Fonction gérant la sélection dans le menu, ainsi que la validation du choix.
 		             manageKey key = case key of
 		                               SDLK_DOWN	-> if choice >= 2
 					                             then loopwith 0
@@ -114,10 +123,12 @@ loop screen env choice = do
 								     else loopwith (choice - 1)
 					       SDLK_RETURN	-> case choice of
 					                             0 -> do
-										Game.newGame screen env
-										reloop
+								     	    -- Lancement d'une partie.
+									    Game.newGame screen env
+									    reloop
 								     1 -> do
+								     	    -- Affichage des scores.
 								            Score.showScores screen env
 									    reloop
-								     2 -> return ()
-					       _		-> reloop
+								     2 -> return () -- Quitter.
+					       _		-> reloop -- Aucun évènement, on boucle.

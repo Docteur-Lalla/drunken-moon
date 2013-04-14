@@ -81,10 +81,12 @@ title screen = do
 -- Affiche l'écran des scores.
 displayShowScores :: Surface -> ImageEnvironment -> IO ()
 displayShowScores scr env = do
+	-- Affichage de Suika dans le fond.
 	SDL.fillRect scr Nothing pblanc
 	let suika = getImage env "suika"
 	Resources.displaySurface suika scr x y
 
+	-- Affichage du titre ("Scores") et des scores sous forme de tableau.
         title scr
 	displayScoreLines scr
 	
@@ -93,8 +95,10 @@ displayShowScores scr env = do
 	      x = 500 - 333
 	      y = 640 - 327
 
+-- Fonction permettant de comparer deux scores.
+-- Nos paires (Pseudo, Score) ne permettent pas de comparaisons directe, on doit extraire le score pour cela.
 compareScores :: (String, String) -> (String, String) -> Ordering
-compareScores (_, n1) (_, n2) = compare (read n1 :: Int) (read n2 :: Int)
+compareScores (_, n1) (_, n2) = compare (read n1 :: Int) (read n2 :: Int) -- read x convertit de String vers Int.
 
 --Affiche les scores dans l'ordre décroissant.
 displayScoreLines :: Surface -> IO ()

@@ -44,12 +44,14 @@ type Image = Resource Surface
 type Environment dt = [Resource dt]
 type ImageEnvironment = Environment Surface
 
+-- Ajoute une image à l'environnemnt.
 addImage :: Image -> ImageEnvironment -> ImageEnvironment
 addImage (Resource ("", _)) e = e
 addImage i@(Resource (n, s)) e
 	| exists n e = i : (rmImage n e)
 	| otherwise  = i : e
-	
+
+-- Enlève une image de l'environnement.
 rmImage :: String -> ImageEnvironment -> ImageEnvironment
 rmImage _ [] = []
 rmImage "" e = e
@@ -57,11 +59,13 @@ rmImage id ((i@(Resource (n, _))):xs)
 	| n == id   = xs
 	| otherwise = i:(rmImage id xs)
 
+-- Vérifie l'existence d'une image dans l'environnement.
 exists :: String -> ImageEnvironment -> Bool
 exists _ [] = False
 exists "" _ = False
 exists id ((Resource (n, _)):xs) = if n == id then True else exists id xs
 
+-- Récupère une image dans l'environnement (ou un Nothing si elle n'existe pas).
 getImage :: ImageEnvironment -> String -> Maybe Surface
 getImage [] _ = Nothing
 getImage _ "" = Nothing
