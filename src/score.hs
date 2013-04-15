@@ -145,8 +145,16 @@ displayScoreLines scr = do
 				toStringPair [] = []
 				toStringPair ((n:p:_):xs) = (p, n) : toStringPair xs
 
+
 --Enregistre un nouveau score.
--- Etats de la fonction (menu | écrire | accepter pseudo | quitter).
+{- 
+	State:
+		Etats de la fonction (menu | écrire | sauvegarder | quitter)
+		les états vont servir à savoir quels sont les actions effectuées par
+		l'utilisateur, et ce qui doit être affiché à l'écran. 
+		
+		la boucle writeScore demande un State et agit en fonction de cet état.
+-}
 data State
 	= Writing String
 	| Menu Int
@@ -154,9 +162,9 @@ data State
 	| Abort
 	deriving (Eq)
 	
+-- Fonction demandant un pseudo à l'utilisateur, et si il veut changer son pseudo ou sauvegarder ou non son score.
 writeScore = writeScore' "" (Writing "")
 
--- writeScore' :: Ecran -> Environnement -> Score -> Nom -> Etat -> IO ()
 writeScore' :: String -> State -> Surface -> ImageEnvironment -> Int -> IO ()
 writeScore' name state scr env score = do
 
@@ -165,21 +173,30 @@ writeScore' name state scr env score = do
 	SDL.flip scr
 
 	-- Agit en fonction de l'état actuel.
+		--Menu -> gère les changements d'option (choix), ou l'appuis sur entrée pour choisir une option
+		--Writing -> gère la saisie du pseudo
+		--Save -> sauvegarde le score
+		--Abort -> quitte sans sauvegarder
 	case state of
 	  Menu c -> reloopMenu c
 	  Writing _ -> reloopWriting
 	  Save -> saveScore score name
 	  Abort -> return ()
 		
-	where reloopMenu c = do
-			       ret <- manageMenuEvent c
-			       writeScore' name ret scr env score
-			
-	      reloopWriting = do
-			        ret <- manageWritingEvent name
-			        case ret of
-				  Writing newname -> writeScore' newname ret scr env score
-				  Menu c -> writeScore' name ret scr env score
+	where
+		--Fonction demandant un choix, et qui retourne un nouvel état par la fonction manageMenuEvent (gère le menu)
+		reloopMenu c = do
+			ret <- manageMenuEvent c
+			writeScore' name ret scr env score
+			       
+		--Fonction qui gère l'étape de saisie du pseudo
+		reloopWriting = do
+			ret <- manageWritingEvent name
+			case ret of
+				Writing newname -> writeScore' newname ret scr env score
+				Menu c -> writeScore' name ret scr env score
+
+
 
 -- Affiche l'écran, en fonction de l'état (soit on écrit, soit on est sur le menu).
 displayWriteScore :: Surface -> ImageEnvironment -> State -> Int -> String -> IO ()
@@ -187,7 +204,8 @@ displayWriteScore scr env state score name = do
 	SDL.fillRect scr Nothing pblanc
 	displaySurface (getImage env "suika") scr x y
 	
-	-- Petit message et menu si on y est, sinon pas de menu.
+	--Affiche un message en titre, et affiche le menu si l'utilisateur est sur le menu
+	--Sinon, si l'utilisateur est entrain d'écrire le pseudo, cache le menu
 	fontMsg <- vera 18
 	case state of
 		Writing _ -> Font.renderCenteredText fontMsg "Entrez votre pseudo." black scr 20
@@ -203,8 +221,11 @@ displayWriteScore scr env state score name = do
 	where pblanc = Pixel 0xFFFFFF
 	      scoreetnom = ["Score : "++(show score), "Pseudo : "++name]
 		
+		--Coordonnées de l'image de fond
 	      x = 500 - 333
 	      y = 640 - 327
+		
+		
 		
 -- Affiche le menu.
 displayWritingMenu :: Surface -> ImageEnvironment -> Int -> IO ()
@@ -212,37 +233,59 @@ displayWritingMenu scr env c = do
 	font' <- Font.dejavu 14
 	TTF.setFontStyle font' [ StyleBold ]
 	
+	--Affiche les 3 choix possibles
 	Font.renderAlignedText font' choices black scr (80, 100) 10
+	
+	--Affiche le sélecteur
 	displaySelector font' 10 c scr env
 
-	where choices = ["Renommer", "Sauvegarder", "Quitter"]
+	where
+		--Choix du menu
+		choices = ["Renommer", "Sauvegarder", "Quitter"]
+		
+		
 		
 -- Affiche le sélecteur du menu.
 displaySelector :: Font -> Int -> Int -> Surface -> ImageEnvironment -> IO ()
 displaySelector f step c scr env = do
-                                 (_, h) <- TTF.textSize f "Nyu"
+				--Récupère h, la hauteur d'une ligne de texte
+				(_, h) <- TTF.textSize f "Nyu"
 
-                                 let select = getImage env "sun"
-				 Resources.displaySurface select scr x (y step h)
+				--Récupère l'image du sélecteur
+				let select = getImage env "sun"
+                                 
+                --Affiche l'image
+				Resources.displaySurface select scr x (y step h)
 				 
-				 return ()
+				return ()
 
-				 where position step h = Rect x (y step h) 500 640
-				       x = 20
-				       y step h = 100 + (step + h) * c - 20
+				where 
+				    x = 20
+				    
+				    --Ordonnée du sélecteur calculée à partir du choix du menu
+				    y step h = 100 + (step + h) * c - 20
 
--- gère les évènements du menu.
+
+
+-- Fonction gérant les évènements du menu.
 manageMenuEvent :: Int -> IO (State)
 manageMenuEvent c = do
 	event <- SDL.waitEvent
+	
+	--Gestion des évènements (fermeture de l'application, ou appuis sur une touche du clavier)
 	case event of
 		Quit -> exitWith ExitSuccess
 		KeyDown (Keysym sym _ _) -> manageKey sym
 		_ -> manageMenuEvent c
 		
-	where manageKey sym = case sym of
+	where 
+		--Fonction qui agit en fonction de la touche appuyée par l'utilisateur
+		manageKey sym = case sym of
+					--Si c'est la flèche du haut, ou du bas, on change de choix
 	 		        SDLK_UP -> if c <= 0 then return $ Menu 2 else return $ Menu (c-1)
 			        SDLK_DOWN -> if c >= 2 then return $ Menu 0 else return $ Menu (c+1)
+					
+					--Si on appuie sur entrée, on renvoie un état en fonction du choix sur lequel on était
 			        SDLK_RETURN -> case c of
 				                 0 -> return (Writing "")
 			 	                 1 -> return Save
@@ -250,23 +293,33 @@ manageMenuEvent c = do
 				                 _ -> manageMenuEvent c
 			        _ -> manageMenuEvent c
 
--- Gère les évènementslors de la saisie du pseudo.
+
+
+--Fonction gérant les évènements lors de la saisie du pseudo.
 manageWritingEvent :: String -> IO (State)
 manageWritingEvent name = do
 	event <- SDL.waitEvent
+	
+	--Regarde si on clique sur la croix (fermeture de la fenêtre), ou si on appuis sur une touche
 	case event of
 		Quit -> exitWith ExitSuccess
 		KeyDown (Keysym sym _ c) -> return $ manageKey sym c
 		_ -> manageWritingEvent name
 		
-	where manageKey sym c = case sym of
+	where 
+		--Fonction qui agit en fonction de la touche appuyée
+		manageKey sym c = case sym of
+					--L'appuis sur entrée provoque un retour au menu
 	 		          SDLK_RETURN -> Menu 0
+	 		        --L'appuis sur la touche "supprimer" efface le dernier caractère
 			          SDLK_BACKSPACE -> Writing (rmlst name)
+			        --Sinon, si on a appuyé sur une lettre ou un chiffre, on rajoute le caractère au nom
 			          _ -> if isAlphaNum c then Writing (name++[c]) else Writing name
 			
-	      rmlst [] = []
-	      rmlst [x] = []
-	      rmlst (x:xs) = x : (rmlst xs)
+		--Fonction qui enlève le dernier élément d'une liste (ici le dernier caractère de notre nom)
+		rmlst [] = []
+		rmlst [x] = []
+		rmlst (x:xs) = x : (rmlst xs)
 
 -- Sauvegarde le score dans le fichier.
 saveScore :: Int -> String -> IO ()
