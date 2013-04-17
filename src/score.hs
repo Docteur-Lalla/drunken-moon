@@ -323,4 +323,4 @@ manageWritingEvent name = do
 
 -- Sauvegarde le score dans le fichier.
 saveScore :: Int -> String -> IO ()
-saveScore a b = appendFile scoreDir ((show a)++" "++b)
+saveScore a b = appendFile scoreDir ((show a) ++ " " ++ b ++ "\n")

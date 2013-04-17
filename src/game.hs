@@ -34,6 +34,9 @@ import Score (writeScore)
 import Resources
 import Graphics.UI.SDL as SDL
 
+import Scripting.Lua as Lua
+import LuaWrapper as HsLua
+
 -- Fonction getDifficulty demandant la difficulté au joueur.
 
 getDifficulty :: IO (Maybe Int)
@@ -70,5 +73,15 @@ stringOfDiff Nothing = "Undefined"
 -- Crée une partie.
 
 newGame :: Surface -> ImageEnvironment -> IO ()
-newGame scr env = do
-	Score.writeScore scr env 1000
+newGame scr env =
+  do
+    lua <- Lua.newstate
+    Lua.openlibs lua
+
+    Lua.registerhsfunction lua "hsPrint" print
+    HsLua.dofile lua "rc/game.lua"
+    HsLua.fcall lua "game" 0 0
+
+    Score.writeScore scr env 1000
+
+    where print = putStrLn
