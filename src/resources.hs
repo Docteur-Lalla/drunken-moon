@@ -30,59 +30,106 @@
 
 module Resources where
 
+import Data.IORef
+import Data.Maybe
+import Data.List as L
+import System.IO.Unsafe (unsafeInterleaveIO, unsafePerformIO)
 import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.Mixer as MIX
 import Graphics.UI.SDL.Image as IMG
 
 -- Types de données pour gérer l'environnement
-
-newtype Resource a = Resource (String, a)
---type Sound = Resource Music
---type SoundEnvironment = [Sound]
-
+type Resource a = (String, a)
 type Image = Resource Surface
+type RMusic = Resource Music
+type Sound = Resource Chunk
 
 type Environment dt = [Resource dt]
 type ImageEnvironment = Environment Surface
+type MusicEnvironment = Environment Music
+type SoundEnvironment = Environment Chunk
 
--- Ajoute une image à l'environnemnt.
-addImage :: Image -> ImageEnvironment -> ImageEnvironment
-addImage (Resource ("", _)) e = e
-addImage i@(Resource (n, s)) e
-	| exists n e = i : (rmImage n e)
-	| otherwise  = i : e
+-- La liste de musiques
+music_map :: IORef MusicEnvironment
+music_map = unsafePerformIO $ newIORef []
 
--- Enlève une image de l'environnement.
-rmImage :: String -> ImageEnvironment -> ImageEnvironment
-rmImage _ [] = []
-rmImage "" e = e
-rmImage id ((i@(Resource (n, _))):xs)
-	| n == id   = xs
-	| otherwise = i:(rmImage id xs)
+-- La liste des sons
+sound_map :: IORef SoundEnvironment
+sound_map = unsafePerformIO $ newIORef []
 
--- Vérifie l'existence d'une image dans l'environnement.
-exists :: String -> ImageEnvironment -> Bool
-exists _ [] = False
-exists "" _ = False
-exists id ((Resource (n, _)):xs) = if n == id then True else exists id xs
+-- La liste d'images
+image_map :: IORef ImageEnvironment
+image_map = unsafePerformIO $ newIORef []
 
--- Récupère une image dans l'environnement (ou un Nothing si elle n'existe pas).
-getImage :: ImageEnvironment -> String -> Maybe Surface
-getImage [] _ = Nothing
-getImage _ "" = Nothing
-getImage ((Resource (n, s)):xs) id
-	| id == n   = Just s
-	| otherwise = getImage xs id
-	
+-- Fonction qui vérifie si une resource a un certain nom
+hasName :: String -> Resource a -> Bool
+hasName str (name,_) = str == name
+
+-- Ajoute une resource chargée dans un environnement, si une resource
+-- du même nom éxiste, l'environnement reste inchangé.
+addRes :: Resource a -> IORef (Environment a) -> IO ()
+addRes r@(name,_) env =
+  do
+    l <- readIORef env
+    
+    if (L.any (hasName name) l) then
+      return ()
+    else
+      modifyIORef' env (r:)
+
+-- Récupère une resource nommée 'name' dans un environment 'env'
+getRes :: IORef (Environment a) -> String -> IO (Maybe a)
+getRes env name =
+  do
+    l <- readIORef env
+    return $ L.lookup name l
+
+
+
+-- Charge une musique dans la mémoire
+addMusic :: String -> String -> IO ()
+addMusic name src =
+  do
+    m <- MIX.loadMUS src
+    addRes (name, m) music_map
+
+-- Récupère une musique depuis la mémoire
+getMusic :: String -> IO (Maybe Music)
+getMusic = getRes music_map
+    
+-- Charge une image dans la mémoire
+addImage :: String -> String -> IO ()
+addImage name src =
+  do
+    i <- IMG.load src
+    addRes (name, i) image_map
+
+-- Récupère une image depuis la mémoire
+getImage :: String -> IO (Maybe Surface)
+getImage = getRes image_map
+
+-- Charge un son dans la mémoire
+addSound :: String -> String -> IO ()
+addSound name src =
+  do
+    s <- MIX.loadWAV src
+    addRes (name, s) sound_map
+
+-- Récupère un son depuis la mémoire
+getSound :: String -> IO (Maybe Chunk)
+getSound = getRes sound_map
+
 -- Initialise l'environnement
-
-initImageEnvironment :: IO (ImageEnvironment)
-initImageEnvironment = do
-	suika <- IMG.load "rc/images/Suika.jpeg"
-	sun <- IMG.load "rc/images/sun.jpg"
+initEnvironment :: IO ()
+initEnvironment =
+  do
+    -- Ajoute les musiques
+	addMusic "musique_factice" "rc/musics/nightofnights.mp3"
 	
-	let env = addImage (Resource ("suika", suika)) $ addImage (Resource ("sun", sun)) []
-	return env
-
+	-- Ajoute les images
+	addImage "suika" "rc/images/Suika.jpeg"
+	addImage "sun" "rc/images/sun.jpg"
+	
 -- Fonction pour afficher une surface plus facilement
 displaySurface :: (Maybe Surface) -> Surface -> Int -> Int -> IO Bool
 displaySurface Nothing _ _ _ = return False

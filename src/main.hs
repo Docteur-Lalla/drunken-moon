@@ -54,8 +54,8 @@ main = withInit [InitVideo] $
 	                enableUnicode True
 	                
 			-- Initialisation de l'environnement (images et musiques).
-	                env <- initImageEnvironment
+	                initEnvironment
 
 			-- Lancement du menu (coeur du programme) puis fermeture du jeu.
-	                Menu.loop screen env 0
+	                Menu.loop screen 0
 			SDL.quit

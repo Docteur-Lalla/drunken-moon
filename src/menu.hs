@@ -58,23 +58,24 @@ title screen = do
     displaySelector : affiche le sélecteur
  -}
 
-displaySelector :: Font -> Int -> Int -> Surface -> ImageEnvironment -> IO ()
-displaySelector f step c scr env = do
-                                 (_, h) <- TTF.textSize f "Nyu" -- Récupère la hauteur (en pixel) du texte.
+displaySelector :: Font -> Int -> Int -> Surface -> IO ()
+displaySelector f step c scr = do
+	(_, h) <- TTF.textSize f "Nyu" -- Récupère la hauteur (en pixel) du texte.
 
-                                 let select = getImage env "sun" -- Charge le sélecteur (soleil) en mémoire.
-				 Resources.displaySurface select scr x (y step h)
-				 
-				 return ()
+	select <- getImage "sun" -- Charge le sélecteur (soleil) en mémoire.
+	Resources.displaySurface select scr x (y step h)
 
-				 where position step h = Rect x (y step h) 500 640
-				       x = 20
-				       y step h = 100 + (step + h) * c - 20
+	return ()
 
-display :: Int -> Surface -> ImageEnvironment -> IO ()
-display choice screen env = do
+	where 
+		  position step h = Rect x (y step h) 500 640
+		  x = 20
+		  y step h = 100 + (step + h) * c - 20
+
+display :: Int -> Surface -> IO ()
+display choice screen = do
 			  -- Affichage de Suika en fond.
-                          let suika = getImage env "suika"
+                          suika <- getImage "suika"
 	                  SDL.fillRect screen Nothing pixel
 	                  Resources.displaySurface suika screen x y
 
@@ -87,7 +88,7 @@ display choice screen env = do
 
 			  -- Affichage du menu.
 		          Font.renderAlignedText font' choices color screen (80, 100) 10
-			  displaySelector font' 10 choice screen env
+			  displaySelector font' 10 choice screen
 
                           where color = Color 0x00 0x00 0x00
 		                pixel = Pixel 0xFFFFFF
@@ -96,10 +97,10 @@ display choice screen env = do
 		                choices = ["Nouvelle partie", "Scores", "Quitter"]
 
 -- Boucle principale du menu (appelée par la fonction main).
-loop :: Surface -> ImageEnvironment -> Int -> IO ()
-loop screen env choice = do
+loop :: Surface -> Int -> IO ()
+loop screen choice = do
 		       -- Affichage du menu.
-		       display choice screen env
+		       display choice screen
 	     	       SDL.flip screen
 
 		       -- Gestion des évènements clavier.
@@ -110,8 +111,8 @@ loop screen env choice = do
 		         KeyDown (Keysym key _ _) -> manageKey key
 		         _			   -> reloop
 
-		       where reloop = loop screen env choice
-		             loopwith = loop screen env
+		       where reloop = loop screen choice
+		             loopwith = loop screen
 
 			     -- Fonction gérant la sélection dans le menu, ainsi que la validation du choix.
 		             manageKey key = case key of
@@ -124,11 +125,11 @@ loop screen env choice = do
 					       SDLK_RETURN	-> case choice of
 					                             0 -> do
 								     	    -- Lancement d'une partie.
-									    Game.newGame screen env
+									    Game.newGame screen
 									    reloop
 								     1 -> do
 								     	    -- Affichage des scores.
-								            Score.showScores screen env
+								            Score.showScores screen
 									    reloop
 								     2 -> return () -- Quitter.
 					       _		-> reloop -- Aucun évènement, on boucle.

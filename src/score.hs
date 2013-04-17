@@ -52,9 +52,9 @@ getScoreLines = withFile scoreDir ReadMode $ (\file -> do
 		  
 		  
 -- Affiche les scores enregistrés.
-showScores :: Surface -> ImageEnvironment -> IO ()
-showScores screen env = do
-		displayShowScores screen env
+showScores :: Surface -> IO ()
+showScores screen = do
+		displayShowScores screen
 		SDL.flip screen
 		
 		event <- SDL.waitEvent
@@ -63,31 +63,32 @@ showScores screen env = do
 			KeyDown (Keysym sym _ _) -> manageKey sym
 			_                        -> reloop
 		
-		where reloop = showScores screen env
+		where reloop = showScores screen
 			
 		      manageKey key = case key of
 					SDLK_q -> return ()
 					_   -> reloop
 
 title :: Surface -> IO ()
-title screen = do
-                 font <- Font.vera 28
-		 TTF.setFontStyle font [ StyleBold ]
+title screen =
+  do
+	font <- Font.vera 28
+	TTF.setFontStyle font [ StyleBold ]
 
-                 Font.renderCenteredText font "Scores" color screen 35
+	Font.renderCenteredText font "Scores" color screen 35
 
-		 where color = Color 0x00 0x00 0x00
+	where color = Color 0x00 0x00 0x00
 
 -- Affiche l'écran des scores.
-displayShowScores :: Surface -> ImageEnvironment -> IO ()
-displayShowScores scr env = do
+displayShowScores :: Surface -> IO ()
+displayShowScores scr = do
 	-- Affichage de Suika dans le fond.
 	SDL.fillRect scr Nothing pblanc
-	let suika = getImage env "suika"
+	suika <- getImage "suika"
 	Resources.displaySurface suika scr x y
 
 	-- Affichage du titre ("Scores") et des scores sous forme de tableau.
-        title scr
+	title scr
 	displayScoreLines scr
 	
 	where pblanc = Pixel 0xFFFFFF
@@ -165,11 +166,11 @@ data State
 -- Fonction demandant un pseudo à l'utilisateur, et si il veut changer son pseudo ou sauvegarder ou non son score.
 writeScore = writeScore' "" (Writing "")
 
-writeScore' :: String -> State -> Surface -> ImageEnvironment -> Int -> IO ()
-writeScore' name state scr env score = do
+writeScore' :: String -> State -> Surface -> Int -> IO ()
+writeScore' name state scr score = do
 
 	-- Affiche le menu de sauvegarde de score.
-	displayWriteScore scr env state score name
+	displayWriteScore scr state score name
 	SDL.flip scr
 
 	-- Agit en fonction de l'état actuel.
@@ -187,22 +188,23 @@ writeScore' name state scr env score = do
 		--Fonction demandant un choix, et qui retourne un nouvel état par la fonction manageMenuEvent (gère le menu)
 		reloopMenu c = do
 			ret <- manageMenuEvent c
-			writeScore' name ret scr env score
+			writeScore' name ret scr score
 			       
 		--Fonction qui gère l'étape de saisie du pseudo
 		reloopWriting = do
 			ret <- manageWritingEvent name
 			case ret of
-				Writing newname -> writeScore' newname ret scr env score
-				Menu c -> writeScore' name ret scr env score
+				Writing newname -> writeScore' newname ret scr score
+				Menu c -> writeScore' name ret scr score
 
 
 
 -- Affiche l'écran, en fonction de l'état (soit on écrit, soit on est sur le menu).
-displayWriteScore :: Surface -> ImageEnvironment -> State -> Int -> String -> IO ()
-displayWriteScore scr env state score name = do
+displayWriteScore :: Surface -> State -> Int -> String -> IO ()
+displayWriteScore scr state score name = do
 	SDL.fillRect scr Nothing pblanc
-	displaySurface (getImage env "suika") scr x y
+	suika <- getImage "suika"
+	displaySurface suika scr x y
 	
 	--Affiche un message en titre, et affiche le menu si l'utilisateur est sur le menu
 	--Sinon, si l'utilisateur est entrain d'écrire le pseudo, cache le menu
@@ -211,7 +213,7 @@ displayWriteScore scr env state score name = do
 		Writing _ -> Font.renderCenteredText fontMsg "Entrez votre pseudo." black scr 20
 		Menu c -> do
 			Font.renderCenteredText fontMsg "Que faites vous?" black scr 20
-			displayWritingMenu scr env c
+			displayWritingMenu scr c
 		_ -> return ()
 			
 	-- Affiche le score et le pseudo.
@@ -228,8 +230,8 @@ displayWriteScore scr env state score name = do
 		
 		
 -- Affiche le menu.
-displayWritingMenu :: Surface -> ImageEnvironment -> Int -> IO ()
-displayWritingMenu scr env c = do	
+displayWritingMenu :: Surface -> Int -> IO ()
+displayWritingMenu scr c = do	
 	font' <- Font.dejavu 14
 	TTF.setFontStyle font' [ StyleBold ]
 	
@@ -237,7 +239,7 @@ displayWritingMenu scr env c = do
 	Font.renderAlignedText font' choices black scr (80, 100) 10
 	
 	--Affiche le sélecteur
-	displaySelector font' 10 c scr env
+	displaySelector font' 10 c scr
 
 	where
 		--Choix du menu
@@ -246,13 +248,13 @@ displayWritingMenu scr env c = do
 		
 		
 -- Affiche le sélecteur du menu.
-displaySelector :: Font -> Int -> Int -> Surface -> ImageEnvironment -> IO ()
-displaySelector f step c scr env = do
+displaySelector :: Font -> Int -> Int -> Surface -> IO ()
+displaySelector f step c scr = do
 				--Récupère h, la hauteur d'une ligne de texte
 				(_, h) <- TTF.textSize f "Nyu"
 
 				--Récupère l'image du sélecteur
-				let select = getImage env "sun"
+				select <- getImage "sun"
                                  
                 --Affiche l'image
 				Resources.displaySurface select scr x (y step h)
@@ -323,4 +325,4 @@ manageWritingEvent name = do
 
 -- Sauvegarde le score dans le fichier.
 saveScore :: Int -> String -> IO ()
-saveScore a b = appendFile scoreDir ((show a)++" "++b)
+saveScore a b = appendFile scoreDir ((show a)++" "++b++"\n")
