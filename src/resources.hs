@@ -30,55 +30,106 @@
 
 module Resources where
 
+import Data.IORef
+import Data.Maybe
+import Data.List as L
+import System.IO.Unsafe (unsafeInterleaveIO, unsafePerformIO)
 import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.Mixer as MIX
 import Graphics.UI.SDL.Image as IMG
 
 -- Types de données pour gérer l'environnement
+type Resource a = (String, a)
+type Image = Resource Surface
+type RMusic = Resource Music
+type Sound = Resource Chunk
 
-newtype Res a = Res (String, a)
---type Sound = Res Music
---type SoundEnv = [Sound]
+type Environment dt = [Resource dt]
+type ImageEnvironment = Environment Surface
+type MusicEnvironment = Environment Music
+type SoundEnvironment = Environment Chunk
 
-type Image = Res Surface
-type ImgEnv = [Image]
+-- La liste de musiques
+music_map :: IORef MusicEnvironment
+music_map = unsafePerformIO $ newIORef []
 
-type Env = ImgEnv
+-- La liste des sons
+sound_map :: IORef SoundEnvironment
+sound_map = unsafePerformIO $ newIORef []
 
-addImage :: Image -> ImgEnv -> ImgEnv
-addImage (Res ("", _)) e = e
-addImage i@(Res (n, s)) e
-	| exists n e = i : (rmImage n e)
-	| otherwise  = i : e
-	
-rmImage :: String -> ImgEnv -> ImgEnv
-rmImage _ [] = []
-rmImage "" e = e
-rmImage id ((i@(Res (n, _))):xs)
-	| n == id   = xs
-	| otherwise = i:(rmImage id xs)
+-- La liste d'images
+image_map :: IORef ImageEnvironment
+image_map = unsafePerformIO $ newIORef []
 
-exists :: String -> ImgEnv -> Bool
-exists _ [] = False
-exists "" _ = False
-exists id ((Res (n, _)):xs) = if n == id then True else exists id xs
+-- Fonction qui vérifie si une resource a un certain nom
+hasName :: String -> Resource a -> Bool
+hasName str (name,_) = str == name
 
-getImage :: ImgEnv -> String -> Maybe Surface
-getImage [] _ = Nothing
-getImage _ "" = Nothing
-getImage ((Res (n, s)):xs) id
-	| id == n   = Just s
-	| otherwise = getImage xs id
-	
+-- Ajoute une resource chargée dans un environnement, si une resource
+-- du même nom éxiste, l'environnement reste inchangé.
+addRes :: Resource a -> IORef (Environment a) -> IO ()
+addRes r@(name,_) env =
+  do
+    l <- readIORef env
+    
+    if (L.any (hasName name) l) then
+      return ()
+    else
+      modifyIORef' env (r:)
+
+-- Récupère une resource nommée 'name' dans un environment 'env'
+getRes :: IORef (Environment a) -> String -> IO (Maybe a)
+getRes env name =
+  do
+    l <- readIORef env
+    return $ L.lookup name l
+
+
+
+-- Charge une musique dans la mémoire
+addMusic :: String -> String -> IO ()
+addMusic name src =
+  do
+    m <- MIX.loadMUS src
+    addRes (name, m) music_map
+
+-- Récupère une musique depuis la mémoire
+getMusic :: String -> IO (Maybe Music)
+getMusic = getRes music_map
+    
+-- Charge une image dans la mémoire
+addImage :: String -> String -> IO ()
+addImage name src =
+  do
+    i <- IMG.load src
+    addRes (name, i) image_map
+
+-- Récupère une image depuis la mémoire
+getImage :: String -> IO (Maybe Surface)
+getImage = getRes image_map
+
+-- Charge un son dans la mémoire
+addSound :: String -> String -> IO ()
+addSound name src =
+  do
+    s <- MIX.loadWAV src
+    addRes (name, s) sound_map
+
+-- Récupère un son depuis la mémoire
+getSound :: String -> IO (Maybe Chunk)
+getSound = getRes sound_map
+
 -- Initialise l'environnement
-
-initEnv :: IO (Env)
-initEnv = do
-	suika <- IMG.load "rc/images/Suika.jpeg"
-	sun <- IMG.load "rc/images/sun.jpg"
+initEnvironment :: IO ()
+initEnvironment =
+  do
+    -- Ajoute les musiques
+	addMusic "musique_factice" "rc/musics/nightofnights.mp3"
 	
-	let env = addImage (Res ("suika", suika)) $ addImage (Res ("sun", sun)) []
-	return env
-
+	-- Ajoute les images
+	addImage "suika" "rc/images/Suika.jpeg"
+	addImage "sun" "rc/images/sun.jpg"
+	
 -- Fonction pour afficher une surface plus facilement
 displaySurface :: (Maybe Surface) -> Surface -> Int -> Int -> IO Bool
 displaySurface Nothing _ _ _ = return False

@@ -44,11 +44,18 @@ main = withInit [InitVideo] $
 	    case ttf of
 	      False -> putStrLn "SDL_TTF cannot be initialized."
 	      True -> do
+	      		-- Initialisation du module vidéo du programme.
+			-- Création d'une fenêtre de 500x640 en 32 bits.
 	                screen <- SDL.setVideoMode 500 640 32 [HWSurface]
 	                SDL.setCaption "Drunken Moon" "Drunken Moon"
+
+			-- Activation de la répétition des touches et de l'Unicode.
 			SDL.enableKeyRepeat 500 20
 	                enableUnicode True
 	                
-	                env <- initEnv
-	                Menu.loop screen env 0
+			-- Initialisation de l'environnement (images et musiques).
+	                initEnvironment
+
+			-- Lancement du menu (coeur du programme) puis fermeture du jeu.
+	                Menu.loop screen 0
 			SDL.quit
