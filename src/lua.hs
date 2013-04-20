@@ -28,59 +28,29 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Game (newGame) where
-
-import Score (writeScore)
-import Resources
-import Graphics.UI.SDL as SDL
+module LuaWrapper where
 
 import Scripting.Lua as Lua
-import LuaWrapper as HsLua
+import Bullet
 
--- Fonction getDifficulty demandant la difficulté au joueur.
+hsPrint = putStrLn
 
-getDifficulty :: IO (Maybe Int)
-getDifficulty = do
-                  putStrLn "Quel mode choisissez-vous ?"
-		  putStrLn "1 : Facile"
-		  putStrLn "2 : Normal"
-		  putStrLn "3 : Difficile"
-		  putStrLn "4 : Lunatique"
-		  putStrLn "5 : Extra"
-                  c <- getLine
-		  return (analyze c)
-
--- Conversion de la String en Maybe Int (Int si correct ou Nothing s'il y a erreur).
-
-analyze :: String -> Maybe Int
-analyze "1" = Just 0
-analyze "2" = Just 1
-analyze "3" = Just 2
-analyze "4" = Just 3
-analyze "5" = Just 4
-analyze _ = Nothing
-
--- Conversion de Maybe Int vers String.
-
-stringOfDiff :: Maybe Int -> String
-stringOfDiff (Just 0) = "Easy"
-stringOfDiff (Just 1) = "Normal"
-stringOfDiff (Just 2) = "Hard"
-stringOfDiff (Just 3) = "Lunatic"
-stringOfDiff (Just 4) = "Extra"
-stringOfDiff Nothing = "Undefined"
-
--- Crée une partie.
-
-newGame :: Surface -> IO ()
-newGame scr =
+-- Charge un fichier lua et exécute son contenu.
+dofile :: Lua.LuaState -> String -> IO ()
+dofile lua fname =
   do
-    lua <- Lua.newstate
-    Lua.openlibs lua
+    rt <- Lua.loadfile lua fname
 
-    Lua.registerhsfunction lua "hsPrint" HsLua.hsPrint
-    HsLua.dofile lua "rc/game.lua"
+    case rt of -- Test le retour de loadfile.
+      0 -> do
+             Lua.call lua 0 0 -- Exécute le contenu du fichier 'fname'.
+	     return ()
 
-    HsLua.fcall lua "main" 0 0
+      _ -> putStrLn $ "File " ++ fname ++ " does not exists."
 
-    Lua.close lua
+-- Appelle une fonction lua.
+fcall :: Lua.LuaState -> String -> Int -> Int -> IO Int
+fcall lua fname args rts =
+  do
+    Lua.getglobal lua fname
+    Lua.call lua args rts
