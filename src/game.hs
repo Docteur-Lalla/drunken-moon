@@ -36,6 +36,7 @@ import Graphics.UI.SDL as SDL
 
 import Scripting.Lua as Lua
 import LuaWrapper as HsLua
+import Bullet
 
 -- Fonction getDifficulty demandant la difficulté au joueur.
 
@@ -79,6 +80,7 @@ newGame scr env =
     Lua.openlibs lua
 
     Lua.registerhsfunction lua "hsPrint" print
+
     HsLua.dofile lua "rc/game.lua"
     HsLua.fcall lua "game" 0 0
 
