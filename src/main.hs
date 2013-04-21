@@ -32,13 +32,16 @@ import Score
 import Game
 import Menu
 import Resources
+import Music
 
 import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.Framerate as FPS
+import Graphics.UI.SDL.Mixer as MIX
 import Graphics.UI.SDL.TTF as TTF
 
 -- Fonction main servant de point de départ au programme.
 
-main = withInit [InitVideo] $
+main = withInit [InitVideo, InitAudio] $
           do
 	    ttf <- TTF.init
 	    case ttf of
@@ -46,8 +49,12 @@ main = withInit [InitVideo] $
 	      True -> do
 	      		-- Initialisation du module vidéo du programme.
 			-- Création d'une fenêtre de 500x640 en 32 bits.
-	                screen <- SDL.setVideoMode 500 640 32 [HWSurface]
+	                screen <- SDL.setVideoMode 500 640 32 [HWAccel]
 	                SDL.setCaption "Drunken Moon" "Drunken Moon"
+	                
+	                --Initialisatio du module Audio du programme.
+	                openAudio 44100 AudioS16Sys 2 4096
+	                MIX.allocateChannels 16
 
 			-- Activation de la répétition des touches et de l'Unicode.
 			SDL.enableKeyRepeat 500 20
@@ -55,7 +62,14 @@ main = withInit [InitVideo] $
 	                
 			-- Initialisation de l'environnement (images et musiques).
 	                initEnvironment
-
+	                
+	        -- Lancement de la musique de fond
+	                startBGM "extra_stage_boss"
+	                
 			-- Lancement du menu (coeur du programme) puis fermeture du jeu.
 	                Menu.loop screen 0
+	                
+	                Resources.freeEnvironment    
+	                MIX.closeAudio
+			
 			SDL.quit

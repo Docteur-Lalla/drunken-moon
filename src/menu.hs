@@ -34,11 +34,14 @@ import Font
 import Game
 import Score
 import Resources
+import Music
+import Time
 
 import System.Exit
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Image as IMG
 import Graphics.UI.SDL.TTF as TTF
+
 
 title :: Surface -> IO ()
 title screen = do
@@ -95,24 +98,30 @@ display choice screen = do
 		                x = 500 - 333
 		                y = 640 - 327
 		                choices = ["Nouvelle partie", "Scores", "Quitter"]
+  
 
 -- Boucle principale du menu (appelée par la fonction main).
 loop :: Surface -> Int -> IO ()
 loop screen choice = do
 		       -- Affichage du menu.
 		       display choice screen
-	     	       SDL.flip screen
+	     	       SDL.flip screen	     	      
 
 		       -- Gestion des évènements clavier.
-                       event <- waitEvent
+                       event <- SDL.pollEvent
 		       case event of
-		         Quit -> exitWith ExitSuccess
+		         Quit -> return ()
 		         KeyDown (Keysym _ _ 'q') -> return ()
 		         KeyDown (Keysym key _ _) -> manageKey key
 		         _			   -> reloop
 
-		       where reloop = loop screen choice
-		             loopwith = loop screen
+		       where reloop = do
+		               wait 20
+		               loop screen choice 
+		             
+		             loopwith x = do
+		               wait 20
+		               loop screen x
 
 			     -- Fonction gérant la sélection dans le menu, ainsi que la validation du choix.
 		             manageKey key = case key of
