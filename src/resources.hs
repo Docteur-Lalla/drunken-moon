@@ -125,6 +125,7 @@ initEnvironment =
   do
     -- Ajoute les musiques
 	addMusic "musique_factice" "rc/musics/nightofnights.mp3"
+	addMusic "green" "rc/musics/green.mp3"
 	
 	-- Ajoute les images
 	addImage "suika" "rc/images/Suika.jpeg"

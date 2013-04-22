@@ -35,6 +35,7 @@ import Resources
 
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
+import Graphics.UI.SDL.Mixer as Mixer
 
 -- Fonction main servant de point de départ au programme.
 
@@ -52,7 +53,7 @@ main = withInit [InitVideo] $
 			-- Activation de la répétition des touches et de l'Unicode.
 			SDL.enableKeyRepeat 500 20
 	                enableUnicode True
-	                
+	               
 			-- Initialisation de l'environnement (images et musiques).
 	                initEnvironment
 
