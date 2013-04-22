@@ -64,8 +64,8 @@ main = withInit [InitVideo, InitAudio] $
 			-- Initialisation de l'environnement (images et musiques).
 	                initEnvironment
 	                
-	        -- Lancement de la musique de fond
-	               -- startBGM "extra_stage_boss"
+	                -- Lancement de la musique de fond
+	                startBGM "main_theme"
 	                
 			-- Lancement du menu (coeur du programme) puis fermeture du jeu.
 	                Menu.loop screen 0

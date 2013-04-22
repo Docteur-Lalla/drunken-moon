@@ -134,6 +134,7 @@ initEnvironment =
   do
     -- Ajoute les musiques
     addMusic "extra_stage_boss" "rc/musics/nightofnights.ogg" 24.75 27.4
+    addMusic "main_theme" "rc/musics/brokenmoon.ogg" 10 45.5
 	
     -- Ajoute les images
     addImage "suika" "rc/images/Suika.jpeg"
