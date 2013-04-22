@@ -33,10 +33,10 @@ module Bullet where
 import Data.List as List
 
 -- Les paramètres des projectiles (coordonnées et rayon) sont fonctions du temps.
-type TimeFunction = Int -> Int
+type TimeFunction = Float -> Float
 
 nullTimeFunction :: TimeFunction
-nullTimeFunction _ = 0
+nullTimeFunction _ = 0.0
 
 {-
   Il existe deux types de patterns :
@@ -45,7 +45,7 @@ nullTimeFunction _ = 0
  -}
 
 data Pattern
-  = Simple { x :: TimeFunction, y :: TimeFunction, r :: TimeFunction, life :: Int, skin :: String }
+  = Simple { x :: TimeFunction, y :: TimeFunction, r :: TimeFunction, spawn :: Int, life :: Int, skin :: String }
   | Complex { patts :: [(Pattern, Int)], x :: TimeFunction, y :: TimeFunction }
 
 -- Une spellcard met en scène plusieurs patterns selon un angle et une date d'apparition.
@@ -54,31 +54,43 @@ data Spellcard = Spellcard { spawns :: [Int], patterns :: [(Int, Pattern)] }
 -- Un boss a une musique spécifique, une apparence et une liste de spellcards à lancer (survival ou classique).
 data Boss = Boss { music :: String, face :: String, spellstart :: [Int], spell :: [(Spellcard, Bool)] }
 
--- Aplanir la gestion des dates d'apparition.
-absoluteSpawn :: Int -> Pattern -> Pattern
-absoluteSpawn sp p@(Simple _ _ _ _ _) = p
-absoluteSpawn sp (Complex (hd:tl) x y) = let new_patt (p, spawn) = (absoluteSpawn (sp+spawn) p, sp+spawn)
-                                                  in Complex (new_patt hd : map new_patt tl) x y
-
--- Récupère les sous-patterns des sous-patterns pour en faire une unique liste.
-pattList :: Pattern -> [ (Pattern, Int) ]
-pattList (Simple _ _ _ _ _)   = []
-pattList (Complex (x:xs) _ _) = x : (List.concat $ map pattList (firstof xs))
-  where firstof [] = []
-        firstof ((p, sp):xs) = p : firstof xs
-
--- Aplatir une arborescence de patterns.
+-- Modifie le pattern pour que les projectiles aient leurs coordonnées absolues et ne dépendent plus de leur père.
 absoluteBullet :: TimeFunction -> TimeFunction -> Pattern -> Pattern
-absoluteBullet x' y' (Simple x y r l s) = Simple fx fy r l s
-                                        
-					where fx t = x t + x' t
-					      fy t = y t + y' t
+absoluteBullet fx fy (Simple x y r sp l s) = Simple (\t -> x t + fx t) (\t -> y t + fy t) r sp l s
+absoluteBullet fx fy (Complex pl x y)      = Complex np nullTimeFunction nullTimeFunction
 
-absoluteBullet x' y' p@(Complex ((patt, sp):xs) x y) = Complex fullpatt fx fy
+  where x' t = fx t + x t
+        y' t = fy t + y t
 
-  where spnewpatts = absoluteSpawn 0 p
-        abs'patts x y = absoluteBullet x y spnewpatts
-	fullpatt = pattList (abs'patts fx fy)
+	mp = map (absoluteBullet x' y') (firstof [] pl)
 
-	fx t = x t + x' t
-	fy t = y t + y' t
+	firstof acc []         = acc
+	firstof acc ((p,_):xs) = firstof (acc ++ [p]) xs
+
+	secondof acc []         = acc
+	secondof acc ((_,s):xs) = secondof (acc ++ [s]) xs
+
+	zip acc [] []           = acc
+	zip acc (h1:t1) (h2:t2) = zip (acc ++ [(h1,h2)]) t1 t2
+
+	np = zip [] mp (secondof [] pl)
+
+-- Modifie le pattern pour que chaque sous-pattern gère son spawn de manière indépendante.
+absoluteSpawn :: Int -> Pattern -> Pattern
+absoluteSpawn sp (Simple x y r spn l s) = Simple x y r (sp + spn) l s
+absoluteSpawn sp (Complex p x y)        = Complex newp x y
+
+  where new_patt sp (patt, spn) = (absoluteSpawn (sp+spn) patt, 0)
+        newp = map (new_patt sp) p
+
+listOfTree :: Pattern -> [Pattern]
+listOfTree p@(Simple _ _ _ _ _ _) = [p]
+listOfTree (Complex pl _ _)       = List.concat $ map listOne pl
+
+  where listOne (patt, sp) = listOfTree patt
+
+bulletList :: Pattern -> [Pattern]
+bulletList patt = listOfTree bl
+
+  where sppatt = absoluteSpawn 0 patt
+        bl     = absoluteBullet nullTimeFunction nullTimeFunction sppatt

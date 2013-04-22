@@ -133,16 +133,16 @@ initEnvironment :: IO ()
 initEnvironment =
   do
     -- Ajoute les musiques
-	addMusic "extra_stage_boss" "rc/musics/nightofnights.ogg" 24.75 27.4
+    addMusic "extra_stage_boss" "rc/musics/nightofnights.ogg" 24.75 27.4
 	
-	-- Ajoute les images
-	addImage "suika" "rc/images/Suika.jpeg"
-	addImage "sun" "rc/images/sun.jpg"
+    -- Ajoute les images
+    addImage "suika" "rc/images/Suika.jpeg"
+    addImage "sun" "rc/images/sun.jpg"
 	
-	-- Ajoute les sons
-	addSound "select" "rc/sounds/select00.wav"
-	addSound "ok" "rc/sounds/ok00.wav"
-	addSound "cancel" "rc/sounds/cancel00.wav"
+    -- Ajoute les sons
+    addSound "select" "rc/sounds/select00.wav"
+    addSound "ok" "rc/sounds/ok00.wav"
+    addSound "cancel" "rc/sounds/cancel00.wav"
 	
 -- Libère toutes les resources de la mémoire
 freeEnvironment :: IO ()
