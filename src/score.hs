@@ -32,6 +32,9 @@ module Score (showScores, writeScore) where
 
 import Font
 import Resources
+import Music
+import Time
+
 import System.Exit
 import System.IO
 import Graphics.UI.SDL as SDL
@@ -57,16 +60,21 @@ showScores screen = do
 		displayShowScores screen
 		SDL.flip screen
 		
-		event <- SDL.waitEvent
+		event <- SDL.pollEvent
 		case event of
 			Quit                     -> exitWith ExitSuccess
 			KeyDown (Keysym sym _ _) -> manageKey sym
 			_                        -> reloop
 		
-		where reloop = showScores screen
+		where reloop = do
+			  wait 20
+			  showScores screen
 			
 		      manageKey key = case key of
-					SDLK_q -> return ()
+					SDLK_q -> 
+					  do
+					    playCancel
+					    return ()
 					_   -> reloop
 
 title :: Surface -> IO ()
@@ -188,11 +196,13 @@ writeScore' name state scr score = do
 		--Fonction demandant un choix, et qui retourne un nouvel état par la fonction manageMenuEvent (gère le menu)
 		reloopMenu c = do
 			ret <- manageMenuEvent c
+			wait 20
 			writeScore' name ret scr score
 			       
 		--Fonction qui gère l'étape de saisie du pseudo
 		reloopWriting = do
 			ret <- manageWritingEvent name
+			wait 20
 			case ret of
 				Writing newname -> writeScore' newname ret scr score
 				Menu c -> writeScore' name ret scr score
@@ -272,13 +282,13 @@ displaySelector f step c scr = do
 -- Fonction gérant les évènements du menu.
 manageMenuEvent :: Int -> IO (State)
 manageMenuEvent c = do
-	event <- SDL.waitEvent
+	event <- SDL.pollEvent
 	
 	--Gestion des évènements (fermeture de l'application, ou appuis sur une touche du clavier)
 	case event of
 		Quit -> exitWith ExitSuccess
 		KeyDown (Keysym sym _ _) -> manageKey sym
-		_ -> manageMenuEvent c
+		_ -> return (Menu c)
 		
 	where 
 		--Fonction qui agit en fonction de la touche appuyée par l'utilisateur
@@ -292,21 +302,21 @@ manageMenuEvent c = do
 				                 0 -> return (Writing "")
 			 	                 1 -> return Save
 				                 2 -> return Abort
-				                 _ -> manageMenuEvent c
-			        _ -> manageMenuEvent c
+				                 _ -> return (Menu c)
+			        _ -> return (Menu c)
 
 
 
 --Fonction gérant les évènements lors de la saisie du pseudo.
 manageWritingEvent :: String -> IO (State)
 manageWritingEvent name = do
-	event <- SDL.waitEvent
+	event <- SDL.pollEvent
 	
 	--Regarde si on clique sur la croix (fermeture de la fenêtre), ou si on appuis sur une touche
 	case event of
 		Quit -> exitWith ExitSuccess
 		KeyDown (Keysym sym _ c) -> return $ manageKey sym c
-		_ -> manageWritingEvent name
+		_ -> return (Writing name)
 		
 	where 
 		--Fonction qui agit en fonction de la touche appuyée
