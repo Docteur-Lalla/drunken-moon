@@ -37,17 +37,26 @@ import System.IO.Unsafe (unsafeInterleaveIO, unsafePerformIO)
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Mixer as MIX
 import Graphics.UI.SDL.Image as IMG
+import Data.Word
+
+-- Type de donnée contenant une musique, la position de fin d'intro et la position de loop
+type BGM = (Music, Double, Double)
 
 -- Types de données pour gérer l'environnement
 type Resource a = (String, a)
 type Image = Resource Surface
-type RMusic = Resource Music
+type RMusic = Resource BGM
 type Sound = Resource Chunk
 
 type Environment dt = [Resource dt]
 type ImageEnvironment = Environment Surface
-type MusicEnvironment = Environment Music
+type MusicEnvironment = Environment BGM
 type SoundEnvironment = Environment Chunk
+
+
+{-
+  Variables nécéssaires au jeu telles que les images, les sons
+-}
 
 -- La liste de musiques
 music_map :: IORef MusicEnvironment
@@ -86,22 +95,22 @@ getRes env name =
 
 
 
--- Charge une musique dans la mémoire
-addMusic :: String -> String -> IO ()
-addMusic name src =
+-- Charge une musique dans la mémoire sous la forme d'un BGM
+addMusic :: String -> String -> Double -> Double -> IO ()
+addMusic name src i r =
   do
     m <- MIX.loadMUS src
-    addRes (name, m) music_map
+    addRes (name, (m, i, r)) music_map
 
 -- Récupère une musique depuis la mémoire
-getMusic :: String -> IO (Maybe Music)
+getMusic :: String -> IO (Maybe BGM)
 getMusic = getRes music_map
-    
+
 -- Charge une image dans la mémoire
 addImage :: String -> String -> IO ()
 addImage name src =
   do
-    i <- IMG.load src
+    i <- (IMG.load src) >>= displayFormat
     addRes (name, i) image_map
 
 -- Récupère une image depuis la mémoire
@@ -124,12 +133,25 @@ initEnvironment :: IO ()
 initEnvironment =
   do
     -- Ajoute les musiques
-	addMusic "musique_factice" "rc/musics/nightofnights.mp3"
+	addMusic "extra_stage_boss" "rc/musics/nightofnights.ogg" 24.75 27.4
 	
 	-- Ajoute les images
 	addImage "suika" "rc/images/Suika.jpeg"
 	addImage "sun" "rc/images/sun.jpg"
 	
+	-- Ajoute les sons
+	addSound "select" "rc/sounds/select00.wav"
+	addSound "ok" "rc/sounds/ok00.wav"
+	addSound "cancel" "rc/sounds/cancel00.wav"
+	
+-- Libère toutes les resources de la mémoire
+freeEnvironment :: IO ()
+freeEnvironment =
+  do
+    fmap (map (\(_, (m,_,_)) -> MIX.freeMusic m)) (readIORef music_map)
+    fmap (map (\(_, i) -> SDL.freeSurface i)) (readIORef image_map)
+    return ()
+
 -- Fonction pour afficher une surface plus facilement
 displaySurface :: (Maybe Surface) -> Surface -> Int -> Int -> IO Bool
 displaySurface Nothing _ _ _ = return False
