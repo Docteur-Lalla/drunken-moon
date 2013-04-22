@@ -56,6 +56,7 @@ main = withInit [InitVideo, InitAudio] $
 	                --Initialisatio du module Audio du programme.
 	                openAudio 44100 AudioS16Sys 2 4096
 	                MIX.allocateChannels 16
+	                MIX.volume (-1) 20
 
 			-- Activation de la répétition des touches et de l'Unicode.
 			SDL.enableKeyRepeat 500 20

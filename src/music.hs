@@ -93,6 +93,16 @@ stopBGM =
     writeIORef actual_bgm Nothing
     writeIORef bgm_pos 0
 
+-- Joue un son au canal 'ch', si ch = -1 alors on prend un canal libre 
+-- canal libre = canal qui ne jou pas de son pour le moment
+{-
+  liste des canaux pour chaque son:
+    sons_du_menu: 1
+    joueur_lance_projectile: 2
+    enemi_lance_projectile: 3
+    spellcard_lancee: 4
+    boss_meurt: 5
+-}
 playSound :: String -> Channel -> IO ()
 playSound name ch =
   do
@@ -112,4 +122,13 @@ playCancel :: IO ()
 playCancel = playSound "cancel" 1
 
 playPlayerBullet :: IO ()
-playPlayerBullet = playSound "pbullet" 2
+playPlayerBullet = playSound "playerbullet" 2
+
+playEnemyBullet :: IO ()
+playEnemyBullet = playSound "enemybullet" 3
+
+playSpellCard :: IO ()
+playSpellCard = playSound "spellcard" 4
+
+playBossDie :: IO ()
+playBossDie = playSound "bossdie" 5
