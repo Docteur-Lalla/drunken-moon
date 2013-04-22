@@ -33,9 +33,6 @@ module LuaWrapper where
 import Scripting.Lua as Lua
 import Bullet
 
-import Foreign.Ptr as Ptr
-import Foreign.Storable as Store
-
 -- Charge un fichier lua et exécute son contenu.
 dofile :: Lua.LuaState -> String -> IO ()
 dofile lua fname =
