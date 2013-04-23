@@ -38,7 +38,6 @@ import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Framerate as FPS
 import Graphics.UI.SDL.Mixer as MIX
 import Graphics.UI.SDL.TTF as TTF
-import Graphics.UI.SDL.Mixer as Mixer
 
 -- Fonction main servant de point de départ au programme.
 

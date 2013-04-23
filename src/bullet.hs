@@ -31,6 +31,9 @@
 module Bullet where
 
 import Data.List as List
+import Graphics.UI.SDL as SDL
+
+import Resources
 
 -- Les paramètres des projectiles (coordonnées et rayon) sont fonctions du temps.
 type TimeFunction = Float -> Float
@@ -83,6 +86,7 @@ absoluteSpawn sp (Complex p x y)        = Complex newp x y
   where new_patt sp (patt, spn) = (absoluteSpawn (sp+spn) patt, 0)
         newp = map (new_patt sp) p
 
+-- Aplatit l'arbre de patterns en une liste de projectiles (pattern simples).
 listOfTree :: Pattern -> [Pattern]
 listOfTree p@(Simple _ _ _ _ _ _) = [p]
 listOfTree (Complex pl _ _)       = List.concat $ map listOne pl
@@ -94,3 +98,31 @@ bulletList patt = listOfTree bl
 
   where sppatt = absoluteSpawn 0 patt
         bl     = absoluteBullet nullTimeFunction nullTimeFunction sppatt
+
+-- Affichage des projectiles à l'écran.
+displayBullets :: Surface -> Int -> [Pattern] -> IO ()
+displayBullets _ _ []                              = return ()
+displayBullets scr t ((Complex _ _ _):xs)          = displayBullets scr t xs
+displayBullets scr t ((Simple fx fy fr sp l s):xs) =
+  do
+    ball <- getImage s
+    if t - sp > 0
+      then Resources.displaySurface ball scr x y
+      else return True
+
+    displayBullets scr t xs
+
+    where x = truncate $ (fx (fromIntegral (t - sp) / 1000.0))
+          y = truncate $ (fy (fromIntegral (t - sp) / 1000.0))
+
+-- Nettoyage de la liste des projectiles selon leur durée de vie.
+cleanBulletList' :: Int -> [Pattern] -> [Pattern] -> [Pattern]
+cleanBulletList' _ acc []                              = acc
+cleanBulletList' t acc ((Complex _ _ _):xs)            = cleanBulletList' t acc xs
+cleanBulletList' t acc (ball@(Simple _ _ _ sp l _):xs) =
+  if t - sp > l
+    then cleanBulletList' t acc xs
+    else cleanBulletList' t (acc ++ [ball]) xs
+
+cleanBulletList :: Int -> [Pattern] -> [Pattern]
+cleanBulletList t patt = cleanBulletList' t [] patt
