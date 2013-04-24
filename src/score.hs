@@ -54,7 +54,8 @@ getScoreLines = withFile scoreDir ReadMode $ (\file -> do
 		  
 		  
 		  
--- Affiche les scores enregistrés.
+-- Affiche les scores enregistrés dans une fenêtre de 150px de haut.
+-- Permet de 'scroller' pour voir tous les scores.
 showScores :: Surface -> Int -> IO ()
 showScores screen offset = do
 		displayShowScores screen offset
@@ -102,10 +103,13 @@ displayShowScores scr offset = do
         -- Affichage du titre "Scores"
         title scr
 
+        -- Update du haut et du bas de l'écran
         SDL.updateRects scr [Rect 0 0 500 150, Rect 0 300 500 340]
 
 	-- Affichage des scores sous forme de tableau.
 	displayScoreLines scr offset
+ 
+        -- Update de la fenêtre dans laquelle sont les scores
 	SDL.updateRect scr $ Rect 0 150 500 150
 
 	where pblanc = Pixel 0xFFFFFF
