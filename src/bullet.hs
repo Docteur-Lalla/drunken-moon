@@ -51,8 +51,7 @@ data Pattern
   = Simple { x :: TimeFunction, y :: TimeFunction, r :: TimeFunction, spawn :: Int, life :: Int, skin :: String }
   | Complex { patts :: [(Pattern, Int)], x :: TimeFunction, y :: TimeFunction }
 
--- Une spellcard met en scène plusieurs patterns selon un angle et une date d'apparition.
-data Spellcard = Spellcard { spawns :: [Int], patterns :: [(Int, Pattern)] }
+data Spellcard = Spellcard { patterns :: [ ([Int], Pattern) ] }
 
 -- Un boss a une musique spécifique, une apparence et une liste de spellcards à lancer (survival ou classique).
 data Boss = Boss { music :: String, face :: String, spellstart :: [Int], spell :: [(Spellcard, Bool)] }
