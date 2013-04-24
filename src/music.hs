@@ -103,32 +103,42 @@ stopBGM =
     spellcard_lancee: 4
     boss_meurt: 5
 -}
-playSound :: String -> Channel -> IO ()
-playSound name ch =
+playSound :: String -> Channel -> Int -> IO ()
+playSound name ch loop =
   do
     s <- getSound name
     case s of
       Nothing -> return 0
-      Just chunk -> playChannel ch chunk 0
+      Just chunk -> playChannel ch chunk loop
     return ()
 
+-- Sons des menus (sélection, ok, et annuler)
 playSelect :: IO ()
-playSelect = playSound "select" 1
+playSelect = playSound "select" 1 0
 
 playOk :: IO ()
-playOk = playSound "ok" 1
+playOk = playSound "ok" 1 0
 
 playCancel :: IO ()
-playCancel = playSound "cancel" 1
+playCancel = playSound "cancel" 1 0
 
+-- Bruit de projectile du joueur (fonctionne différemment des autres)
+-- Le son sera joué en boucle, jusqu'à ce qu'on l'arrête avec la fonction stop
 playPlayerBullet :: IO ()
-playPlayerBullet = playSound "playerbullet" 2
+playPlayerBullet = playSound "playerbullet" 2 (-1)
 
+stopPlayerBulletSound :: IO ()
+stopPlayerBulletSound = haltChannel 2
+
+-- Autres sons (spellcard, projectiles énemis, etc...)
 playEnemyBullet :: IO ()
-playEnemyBullet = playSound "enemybullet" 3
+playEnemyBullet = playSound "enemybullet" 3 0
 
 playSpellCard :: IO ()
-playSpellCard = playSound "spellcard" 4
+playSpellCard = playSound "spellcard" 4 0
 
 playBossDie :: IO ()
-playBossDie = playSound "bossdie" 5
+playBossDie = playSound "bossdie" 5 0
+
+playPlayerDie :: IO ()
+playPlayerDie = playSound "playerdie" 6 0

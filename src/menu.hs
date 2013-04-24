@@ -149,7 +149,7 @@ loop screen choice = do
                                              1 ->
                                                do
                                                  -- Affichage des scores.
-                                                 Score.showScores screen
+                                                 Score.showScores screen 0
                                                  reloop
                                              2 -> return () -- Quitter.
                                              _ -> reloop -- Aucun évènement, on boucle.

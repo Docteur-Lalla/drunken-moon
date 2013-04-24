@@ -32,11 +32,16 @@ module Game (newGame) where
 
 import Score (writeScore)
 import Resources
+import Music
+import Time
 import Graphics.UI.SDL as SDL
+import Graphics.UI.SDL.Mixer as MIx
 
 import Scripting.Lua as Lua
 import LuaWrapper as HsLua
-
+import System.Exit
+import Data.IORef
+import System.IO.Unsafe
 -- Fonction getDifficulty demandant la difficulté au joueur.
 
 getDifficulty :: IO (Maybe Int)
@@ -82,5 +87,119 @@ newGame scr =
     HsLua.dofile lua "rc/game.lua"
 
     HsLua.fcall lua "main" 0 0
-
+    
+    enableKeyRepeat 0 0
+    loop
+    
     Lua.close lua
+
+data Player = Player { isFiring :: Bool
+                      ,dir      :: (Bool, Bool, Bool, Bool)
+                      ,pos      :: (Int, Int)
+                      ,power    :: Int
+                      ,bombs    :: Int
+                      ,lives    :: Int 
+                     }
+-- Blit le perso
+blitPerso :: IO ()
+blitPerso =
+  do
+    -- Récupère l'écran
+    scr <- SDL.getVideoSurface
+    -- Récupère les coordonnées
+    p@(Player _ _ (x, y) _ _ _) <- readIORef joueur
+    
+    -- Affiche le perso et rafraichis l'image
+    SDL.fillRect scr (Just (Rect 0 0 500 640)) (Pixel 0x000000)
+    SDL.fillRect scr (Just (Rect x y 20 20)) (Pixel 0xFFFFFF)
+    SDL.flip scr
+    
+    
+-- Boucle gère les contrôles du joueur
+loop :: IO ()
+loop =
+  do
+    evt <- SDL.pollEvent
+    case evt of
+      Quit                     -> exitWith ExitSuccess
+      KeyDown (Keysym sym _ _) -> manageKeyDown sym
+      KeyUp (Keysym sym _ _)   -> manageKeyUp sym
+      _                        -> return ()
+    
+    -- Modifie les coordonnées en fonction de la vitesse (ralenti si appuis sur Shift)
+    mod <- getModState
+    if KeyModLeftShift `elem` mod
+    then modifyIORef' joueur (setPos 1)
+    else modifyIORef' joueur (setPos 3)
+    
+    -- Affiche le perso, attend 20ms, et boucle
+    blitPerso
+    wait 20
+     
+    loop
+
+    where
+      -- L'utilisateur a appuyé sur une touche
+      manageKeyDown sym =
+        case sym of
+          SDLK_UP    -> setDirUp True
+          SDLK_DOWN  -> setDirDown True
+          SDLK_LEFT  -> setDirLeft True
+          SDLK_RIGHT -> setDirRight True
+          SDLK_w     -> do
+            playPlayerBullet           
+            setFiring True
+          SDLK_x     -> playSpellCard
+          _          -> return ()
+
+      -- L'utilisateur a relaché une touche
+      manageKeyUp sym =
+        case sym of
+          SDLK_UP    -> setDirUp False
+          SDLK_DOWN  -> setDirDown False
+          SDLK_LEFT  -> setDirLeft False
+          SDLK_RIGHT -> setDirRight False
+          SDLK_w     -> do
+            haltChannel 2
+            setFiring False
+          _          -> return ()
+
+-- Le joueur
+joueur :: IORef Player
+joueur = unsafePerformIO $ newIORef (Player False (False, False, False, False) (100, 100) 0 0 0)
+
+-- Donnée définissant les directions
+data Dir = UP | DOWN | LEFT | RIGHT deriving (Eq)
+
+-- Fonction qui modifie le tuple 'dir' d'un joueur en fonction de d et b
+setDir :: Dir -> Bool -> Player -> Player
+setDir d b (p@(Player isf (up, down, left, right) pos pow bomb l))
+  | d == UP    = Player isf (b, down, left, right) pos pow bomb l
+  | d == DOWN  = Player isf (up, b, left, right) pos pow bomb l
+  | d == LEFT  = Player isf (up, down, b, right) pos pow bomb l
+  | d == RIGHT = Player isf (up, down, left, b) pos pow bomb l
+  | otherwise  = p
+
+-- FONCTIONS DE MODIFICATION DE DIRECTION
+setDirUp :: Bool -> IO ()
+setDirUp v = modifyIORef' joueur (setDir UP v)
+
+setDirDown :: Bool -> IO ()
+setDirDown v = modifyIORef' joueur (setDir DOWN v)
+
+setDirLeft :: Bool -> IO ()
+setDirLeft v = modifyIORef' joueur (setDir LEFT v)
+
+setDirRight :: Bool -> IO ()
+setDirRight v = modifyIORef' joueur (setDir RIGHT v)
+
+setFiring :: Bool -> IO ()
+setFiring v = modifyIORef' joueur (\(Player _ b c d e f) -> (Player v b c d e f))
+
+-- Fonction calculant les coordonnées d'un joueur en fonction de ses coord actuelles et de sa direction
+setPos :: Int -> Player -> Player
+setPos v (Player q r@(h, b, g, d) (ox, oy) m o p) = Player q r (ox+x, oy+y) m o p
+  where
+    y = if (h == b) then 0 else if h then (-v) else v
+    x = if (g == d) then 0 else if g then (-v) else v
+

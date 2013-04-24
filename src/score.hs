@@ -55,27 +55,31 @@ getScoreLines = withFile scoreDir ReadMode $ (\file -> do
 		  
 		  
 -- Affiche les scores enregistrés.
-showScores :: Surface -> IO ()
-showScores screen = do
-		displayShowScores screen
-		SDL.flip screen
-		
+showScores :: Surface -> Int -> IO ()
+showScores screen offset = do
+		displayShowScores screen offset
+		--SDL.flip screen
+
 		event <- SDL.pollEvent
 		case event of
 			Quit                     -> exitWith ExitSuccess
 			KeyDown (Keysym sym _ _) -> manageKey sym
-			_                        -> reloop
+			_                        -> reloop offset
 		
-		where reloop = do
+		where reloop x = do
 			  wait 20
-			  showScores screen
+			  showScores screen x
 			
 		      manageKey key = case key of
 					SDLK_q -> 
 					  do
 					    playCancel
 					    return ()
-					_   -> reloop
+                                        SDLK_UP -> reloop (offset + 1)
+                                        SDLK_DOWN -> if offset > 0
+                                                     then reloop (offset - 1)
+                                                     else reloop offset
+					_   -> reloop offset
 
 title :: Surface -> IO ()
 title screen =
@@ -88,17 +92,22 @@ title screen =
 	where color = Color 0x00 0x00 0x00
 
 -- Affiche l'écran des scores.
-displayShowScores :: Surface -> IO ()
-displayShowScores scr = do
+displayShowScores :: Surface -> Int -> IO ()
+displayShowScores scr offset = do
 	-- Affichage de Suika dans le fond.
 	SDL.fillRect scr Nothing pblanc
 	suika <- getImage "suika"
 	Resources.displaySurface suika scr x y
+        
+        -- Affichage du titre "Scores"
+        title scr
 
-	-- Affichage du titre ("Scores") et des scores sous forme de tableau.
-	title scr
-	displayScoreLines scr
-	
+        SDL.updateRects scr [Rect 0 0 500 150, Rect 0 300 500 340]
+
+	-- Affichage des scores sous forme de tableau.
+	displayScoreLines scr offset
+	SDL.updateRect scr $ Rect 0 150 500 150
+
 	where pblanc = Pixel 0xFFFFFF
 					
 	      x = 500 - 333
@@ -110,8 +119,8 @@ compareScores :: (String, String) -> (String, String) -> Ordering
 compareScores (_, n1) (_, n2) = compare (read n1 :: Int) (read n2 :: Int) -- read x convertit de String vers Int.
 
 --Affiche les scores dans l'ordre décroissant.
-displayScoreLines :: Surface -> IO ()
-displayScoreLines scr = do
+displayScoreLines :: Surface -> Int -> IO ()
+displayScoreLines scr offset = do
                           lines <- getScoreLines
 			  
 			  -- Chaque entrée de la liste est de la forme (pseudo, score).
@@ -123,9 +132,9 @@ displayScoreLines scr = do
 
 			  -- Affichage des scores avec la police à largeur fixe VeraMono.
 			  font <- Font.veramono 12
-			  (char_width, _) <- TTF.textSize font " "
+			  (char_width, h ) <- TTF.textSize font " "
 
-			  Font.renderAlignedText font formatted Font.black scr (coords char_width wm) 10
+			  Font.renderAlignedText font formatted Font.black scr (coords char_width wm h) 10
 
 			  where getMaxWidth :: [ (String, String) ] -> Int
 			        getMaxWidth [] = 0
@@ -147,8 +156,8 @@ displayScoreLines scr = do
 							    in format : fillLines len xs
 
 				-- Coordonnées d'affichage de la première ligne de score.
-				coords cw wm = let size = wm * cw
-				                 in (quot (500 - size) 2, 150)
+				coords cw wm h = let size = wm * cw
+				                 in (quot (500 - size) 2, 150-offset*(10+h))
 
 				toStringPair :: [[String]] -> [ (String, String) ]
 				toStringPair [] = []

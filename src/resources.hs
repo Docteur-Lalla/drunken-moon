@@ -144,6 +144,10 @@ initEnvironment =
     addSound "select" "rc/sounds/select00.wav"
     addSound "ok" "rc/sounds/ok00.wav"
     addSound "cancel" "rc/sounds/cancel00.wav"
+    addSound "playerbullet" "rc/sounds/plst00.wav"
+    addSound "playerdie" "rc/sounds/pldead00.wav"
+    addSound "bossdie" "rc/sounds/enep01.wav"
+    addSound "spellcard" "rc/sounds/cat00.wav"
 	
 -- Libère toutes les resources de la mémoire
 freeEnvironment :: IO ()
