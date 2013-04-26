@@ -122,6 +122,7 @@ loop =
     evt <- SDL.pollEvent
     case evt of
       Quit                     -> exitWith ExitSuccess
+      KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
       KeyDown (Keysym sym _ _) -> manageKeyDown sym
       KeyUp (Keysym sym _ _)   -> manageKeyUp sym
       _                        -> return ()
