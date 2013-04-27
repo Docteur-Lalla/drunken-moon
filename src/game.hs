@@ -110,8 +110,7 @@ blitPerso =
     player <- getImage "player"
     Resources.displaySurface player scr (x - 16) (y - 25)
     SDL.flip scr
-    
-    
+
 -- Boucle gère les contrôles du joueur
 loop :: IO ()
 loop =

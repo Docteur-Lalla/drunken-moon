@@ -34,6 +34,7 @@ import Data.List as List
 import Graphics.UI.SDL as SDL
 
 import Resources
+import GameData
 
 -- Les paramètres des projectiles (coordonnées et rayon) sont fonctions du temps.
 type TimeFunction = Float -> Float
@@ -125,3 +126,19 @@ cleanBulletList' t acc (ball@(Simple _ _ _ sp l _):xs) =
 
 cleanBulletList :: Int -> [Pattern] -> [Pattern]
 cleanBulletList t patt = cleanBulletList' t [] patt
+
+-- Test de collision entre les projectiles et le joueur.
+playerBulletCollision :: Float -> [Pattern] -> Player -> Bool
+playerBulletCollision _ [] _                                                     = False
+playerBulletCollision t ((Simple fx fy fr _ _ _):xs) p@(Player _ _ (x, y) _ _ _) =
+  if ret then True else playerBulletCollision t xs p
+  
+  where x' = fx t
+        y' = fy t
+	r' = fr t
+
+        xf = fromIntegral x
+	yf = fromIntegral y
+
+	dist = sqrt $ (x' + xf) ^ 2 + (y' + yf) ^ 2
+	ret = dist < (r' + 5)
