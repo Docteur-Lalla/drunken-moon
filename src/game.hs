@@ -34,6 +34,8 @@ import Score (writeScore)
 import Resources
 import Music
 import Time
+import GameData as GD
+
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Mixer as MIx
 
@@ -94,13 +96,6 @@ newGame scr =
     
     Lua.close lua
 
-data Player = Player { isFiring :: Bool
-                      ,dir      :: (Bool, Bool, Bool, Bool)
-                      ,pos      :: (Int, Int)
-                      ,power    :: Int
-                      ,bombs    :: Int
-                      ,lives    :: Int 
-                     }
 -- Blit le perso
 blitPerso :: IO ()
 blitPerso =
