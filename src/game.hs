@@ -42,6 +42,7 @@ import LuaWrapper as HsLua
 import System.Exit
 import Data.IORef
 import System.IO.Unsafe
+
 -- Fonction getDifficulty demandant la difficulté au joueur.
 
 getDifficulty :: IO (Maybe Int)
@@ -111,7 +112,8 @@ blitPerso =
     
     -- Affiche le perso et rafraichis l'image
     SDL.fillRect scr (Just (Rect 0 0 500 640)) (Pixel 0x000000)
-    SDL.fillRect scr (Just (Rect x y 20 20)) (Pixel 0xFFFFFF)
+    player <- getImage "player"
+    Resources.displaySurface player scr (x - 16) (y - 25)
     SDL.flip scr
     
     
@@ -130,8 +132,8 @@ loop =
     -- Modifie les coordonnées en fonction de la vitesse (ralenti si appuis sur Shift)
     mod <- getModState
     if KeyModLeftShift `elem` mod
-    then modifyIORef' joueur (setPos 1)
-    else modifyIORef' joueur (setPos 3)
+    then modifyIORef' joueur (setPosition 1)
+    else modifyIORef' joueur (setPosition 3)
     
     -- Affiche le perso, attend 20ms, et boucle
     blitPerso
@@ -173,8 +175,8 @@ joueur = unsafePerformIO $ newIORef (Player False (False, False, False, False) (
 data Dir = UP | DOWN | LEFT | RIGHT deriving (Eq)
 
 -- Fonction qui modifie le tuple 'dir' d'un joueur en fonction de d et b
-setDir :: Dir -> Bool -> Player -> Player
-setDir d b (p@(Player isf (up, down, left, right) pos pow bomb l))
+setDirection :: Dir -> Bool -> Player -> Player
+setDirection d b (p@(Player isf (up, down, left, right) pos pow bomb l))
   | d == UP    = Player isf (b, down, left, right) pos pow bomb l
   | d == DOWN  = Player isf (up, b, left, right) pos pow bomb l
   | d == LEFT  = Player isf (up, down, b, right) pos pow bomb l
@@ -183,23 +185,29 @@ setDir d b (p@(Player isf (up, down, left, right) pos pow bomb l))
 
 -- FONCTIONS DE MODIFICATION DE DIRECTION
 setDirUp :: Bool -> IO ()
-setDirUp v = modifyIORef' joueur (setDir UP v)
+setDirUp v = modifyIORef' joueur (setDirection UP v)
 
 setDirDown :: Bool -> IO ()
-setDirDown v = modifyIORef' joueur (setDir DOWN v)
+setDirDown v = modifyIORef' joueur (setDirection DOWN v)
 
 setDirLeft :: Bool -> IO ()
-setDirLeft v = modifyIORef' joueur (setDir LEFT v)
+setDirLeft v = modifyIORef' joueur (setDirection LEFT v)
 
 setDirRight :: Bool -> IO ()
-setDirRight v = modifyIORef' joueur (setDir RIGHT v)
+setDirRight v = modifyIORef' joueur (setDirection RIGHT v)
 
 setFiring :: Bool -> IO ()
 setFiring v = modifyIORef' joueur (\(Player _ b c d e f) -> (Player v b c d e f))
 
 -- Fonction calculant les coordonnées d'un joueur en fonction de ses coord actuelles et de sa direction
-setPos :: Int -> Player -> Player
-setPos v (Player q r@(h, b, g, d) (ox, oy) m o p) = Player q r (ox+x, oy+y) m o p
+setPosition :: Int -> Player -> Player
+setPosition v pl@(Player q r@(h, b, g, d) (ox, oy) m o p)
+  | (h == True) && oy <= 15  = pl
+  | (b == True) && oy >= 618 = pl
+  | (g == True) && ox <= 12  = pl
+  | (d == True) && ox >= 485 = pl
+  | otherwise                = Player q r (ox+x, oy+y) m o p
+
   where
     y = if (h == b) then 0 else if h then (-v) else v
     x = if (g == d) then 0 else if g then (-v) else v

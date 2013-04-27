@@ -110,7 +110,7 @@ getMusic = getRes music_map
 addImage :: String -> String -> IO ()
 addImage name src =
   do
-    i <- (IMG.load src) >>= displayFormat
+    i <- (IMG.load src) >>= displayFormatAlpha
     addRes (name, i) image_map
 
 -- Récupère une image depuis la mémoire
@@ -148,6 +148,13 @@ initEnvironment =
     addSound "playerdie" "rc/sounds/pldead00.wav"
     addSound "bossdie" "rc/sounds/enep01.wav"
     addSound "spellcard" "rc/sounds/cat00.wav"
+
+    -- Ajoute Suika (temporaire)
+    do
+      i <- (IMG.load "rc/images/sprite_suika.jpeg")
+      b <- SDL.setColorKey i [SrcColorKey] (Pixel 0xAAAAFF)
+      displayFormatAlpha i
+      addRes ("player", i) image_map
 	
 -- Libère toutes les resources de la mémoire
 freeEnvironment :: IO ()
