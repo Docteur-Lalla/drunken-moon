@@ -49,7 +49,7 @@ main = withInit [InitVideo, InitAudio] $
 	      True -> do
 	      		-- Initialisation du module vidéo du programme.
 			-- Création d'une fenêtre de 500x640 en 32 bits.
-	                screen <- SDL.setVideoMode 500 640 32 [HWAccel]
+	                screen <- SDL.setVideoMode 500 640 32 [HWAccel, DoubleBuf]
 	                SDL.setCaption "Drunken Moon" "Drunken Moon"
 	                
 	                --Initialisatio du module Audio du programme.
