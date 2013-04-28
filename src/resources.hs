@@ -139,6 +139,7 @@ initEnvironment =
     -- Ajoute les images
     addImage "suika" "rc/images/Suika.jpeg"
     addImage "sun" "rc/images/sun.jpg"
+    addImage "ball" "rc/images/ball.png"
 	
     -- Ajoute les sons
     addSound "select" "rc/sounds/select00.wav"

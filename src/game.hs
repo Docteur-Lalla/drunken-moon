@@ -35,6 +35,7 @@ import Resources
 import Music
 import Time
 import GameData as GD
+import Bullet
 
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Mixer as MIx
@@ -43,6 +44,7 @@ import Scripting.Lua as Lua
 import LuaWrapper as HsLua
 import System.Exit
 import Data.IORef
+import Data.Time
 import System.IO.Unsafe
 
 -- Fonction getDifficulty demandant la difficulté au joueur.
@@ -92,7 +94,9 @@ newGame scr =
     HsLua.fcall lua "main" 0 0
     
     enableKeyRepeat 0 0
-    loop
+
+    t0 <- getCurrentTime
+    loop t0
     
     Lua.close lua
 
@@ -109,11 +113,17 @@ blitPerso =
     SDL.fillRect scr (Just (Rect 0 0 500 640)) (Pixel 0x000000)
     player <- getImage "player"
     Resources.displaySurface player scr (x - 16) (y - 25)
-    SDL.flip scr
+    return ()
+
+patt = Simple fx fy fr 0 60000 "ball"
+       
+       where fx t = 300.0
+             fy t = 300.0
+	     fr t = 12.0
 
 -- Boucle gère les contrôles du joueur
-loop :: IO ()
-loop =
+loop :: UTCTime -> IO ()
+loop t0 =
   do
     evt <- SDL.pollEvent
     case evt of
@@ -130,10 +140,22 @@ loop =
     else modifyIORef' joueur (setPosition 3)
     
     -- Affiche le perso, attend 20ms, et boucle
+    t1 <- getCurrentTime
+    let t = truncate $ (diffUTCTime t1 t0) * 1000
+
+    scr <- SDL.getVideoSurface
+
     blitPerso
+    displayBullets scr t [patt]
+    SDL.flip scr
+
     wait 20
-     
-    loop
+    
+    player <- readIORef joueur
+
+    case playerBulletCollision (fromIntegral t) [patt] player of
+      True  -> return ()
+      False -> loop t0
 
     where
       -- L'utilisateur a appuyé sur une touche

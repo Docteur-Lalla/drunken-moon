@@ -140,5 +140,5 @@ playerBulletCollision t ((Simple fx fy fr _ _ _):xs) p@(Player _ _ (x, y) _ _ _)
         xf = fromIntegral x
 	yf = fromIntegral y
 
-	dist = sqrt $ (x' + xf) ^ 2 + (y' + yf) ^ 2
+	dist = sqrt $ (x' - xf) ^ 2 + (y' - yf) ^ 2
 	ret = dist < (r' + 5)
