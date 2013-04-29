@@ -55,8 +55,8 @@ wait step =
     before <- readIORef the_time
     now <- getTicks
     if (before+step > now)
-    then delay (y before now step)
-    else return ()
+      then delay (y before now step)
+      else return ()
       
     actual_time <- getTicks
     manageBGM (toSec (delta actual_time before))

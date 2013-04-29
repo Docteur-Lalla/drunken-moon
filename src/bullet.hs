@@ -39,6 +39,7 @@ import GameData
 -- Les paramètres des projectiles (coordonnées et rayon) sont fonctions du temps.
 type TimeFunction = Float -> Float
 
+-- Fonction du temps nulle. Permet une écriture plus rapide de fonctions neutres.
 nullTimeFunction :: TimeFunction
 nullTimeFunction _ = 0.0
 
@@ -59,6 +60,16 @@ data Boss = Boss { music :: String, face :: String, spellstart :: [Int], spell :
 
 -- Modifie le pattern pour que les projectiles aient leurs coordonnées absolues et ne dépendent plus de leur père.
 absoluteBullet :: TimeFunction -> TimeFunction -> Pattern -> Pattern
+
+{-
+ - Un pattern simple voit ses fonctions de position altérées par celle de leurs pères.
+ - Un pattern complexe altère ses enfants.
+
+ Dans le cas d'un pattern complexe, on sépare les patterns enfants de leur date de spawn (firstof et secondof),
+ on exécute absoluteBullet sur chacun d'entre eux (map) et on recrée une paire (pattern, spawn) avec les nouveaux
+ patterns (zip).
+ -}
+
 absoluteBullet fx fy (Simple x y r sp l s) = Simple (\t -> x t + fx t) (\t -> y t + fy t) r sp l s
 absoluteBullet fx fy (Complex pl x y)      = Complex np nullTimeFunction nullTimeFunction
 
@@ -89,10 +100,11 @@ absoluteSpawn sp (Complex p x y)        = Complex newp x y
 -- Aplatit l'arbre de patterns en une liste de projectiles (pattern simples).
 listOfTree :: Pattern -> [Pattern]
 listOfTree p@(Simple _ _ _ _ _ _) = [p]
-listOfTree (Complex pl _ _)       = List.concat $ map listOne pl
+listOfTree (Complex pl _ _)       = List.concat $ map listOne pl -- On mappe la fonction listOne.
 
-  where listOne (patt, sp) = listOfTree patt
+  where listOne (patt, sp) = listOfTree patt -- On définie la procédure pour un couple unique (pattern, spawn).
 
+-- bulletList permet d'obtenir la listes des projectiles avec des dates et fonctions absolues.
 bulletList :: Pattern -> [Pattern]
 bulletList patt = listOfTree bl
 
@@ -105,25 +117,26 @@ displayBullets _ _ []                              = return ()
 displayBullets scr t ((Complex _ _ _):xs)          = displayBullets scr t xs
 displayBullets scr t ((Simple fx fy fr sp l s):xs) =
   do
-    ball <- getImage s
+    ball <- getImage s -- On récupère l'image liée au nom du projectile.
     if t - sp > 0
-      then Resources.displaySurface ball scr x y
+      then Resources.displaySurface ball scr x y -- On l'affiche.
       else return True
 
-    displayBullets scr t xs
+    displayBullets scr t xs -- On affiche les projectiles suivants.
 
     where x = truncate $ (fx (fromIntegral (t - sp) / 1000.0))
           y = truncate $ (fy (fromIntegral (t - sp) / 1000.0))
 
--- Nettoyage de la liste des projectiles selon leur durée de vie.
+-- Nettoyage de la liste des projectiles selon leur durée de vie (fonction auxiliaire).
 cleanBulletList' :: Int -> [Pattern] -> [Pattern] -> [Pattern]
 cleanBulletList' _ acc []                              = acc
 cleanBulletList' t acc ((Complex _ _ _):xs)            = cleanBulletList' t acc xs
 cleanBulletList' t acc (ball@(Simple _ _ _ sp l _):xs) =
-  if t - sp > l
+  if t - sp > l -- Si la durée de vie de la balle a dépassé le temps fixé, on la supprime de la liste.
     then cleanBulletList' t acc xs
     else cleanBulletList' t (acc ++ [ball]) xs
 
+-- Fonction appelée dans le reste du programme pour nettoyer la liste de projectiles.
 cleanBulletList :: Int -> [Pattern] -> [Pattern]
 cleanBulletList t patt = cleanBulletList' t [] patt
 
@@ -132,6 +145,11 @@ playerBulletCollision :: Float -> [Pattern] -> Player -> Bool
 playerBulletCollision _ [] _                                                     = False
 playerBulletCollision t ((Simple fx fy fr _ _ _):xs) p@(Player _ _ (x, y) _ _ _) =
   if ret then True else playerBulletCollision t xs p
+
+  {-
+   Si l'addition du rayon du projectile et de celui de la hitbox du personnage est supérieure
+   à la distance entre les centres de ceux-ci (position des deux objets), alors il y a collision.
+   -}
   
   where x' = fx t
         y' = fy t

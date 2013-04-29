@@ -30,6 +30,7 @@
 
 module GameData where
 
+-- Le joueur est représenté par sa position, la direction de son déplacement, ses vies, ses bombes et s'il tire.
 data Player = Player { isFiring :: Bool
                       ,dir      :: (Bool, Bool, Bool, Bool)
                       ,pos      :: (Int, Int)

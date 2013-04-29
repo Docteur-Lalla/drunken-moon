@@ -47,41 +47,7 @@ import Data.IORef
 import Data.Time
 import System.IO.Unsafe
 
--- Fonction getDifficulty demandant la difficulté au joueur.
-
-getDifficulty :: IO (Maybe Int)
-getDifficulty = do
-                  putStrLn "Quel mode choisissez-vous ?"
-		  putStrLn "1 : Facile"
-		  putStrLn "2 : Normal"
-		  putStrLn "3 : Difficile"
-		  putStrLn "4 : Lunatique"
-		  putStrLn "5 : Extra"
-                  c <- getLine
-		  return (analyze c)
-
--- Conversion de la String en Maybe Int (Int si correct ou Nothing s'il y a erreur).
-
-analyze :: String -> Maybe Int
-analyze "1" = Just 0
-analyze "2" = Just 1
-analyze "3" = Just 2
-analyze "4" = Just 3
-analyze "5" = Just 4
-analyze _ = Nothing
-
--- Conversion de Maybe Int vers String.
-
-stringOfDiff :: Maybe Int -> String
-stringOfDiff (Just 0) = "Easy"
-stringOfDiff (Just 1) = "Normal"
-stringOfDiff (Just 2) = "Hard"
-stringOfDiff (Just 3) = "Lunatic"
-stringOfDiff (Just 4) = "Extra"
-stringOfDiff Nothing = "Undefined"
-
 -- Crée une partie.
-
 newGame :: Surface -> IO ()
 newGame scr =
   do
@@ -100,65 +66,69 @@ newGame scr =
     
     Lua.close lua
 
--- Blit le perso
-blitPerso :: IO ()
-blitPerso =
+-- Affiche le personnage à l'écran.
+displayPlayer :: IO ()
+displayPlayer =
   do
-    -- Récupère l'écran
+    -- Récupère l'écran.
     scr <- SDL.getVideoSurface
-    -- Récupère les coordonnées
-    p@(Player _ _ (x, y) _ _ _) <- readIORef joueur
+    -- Récupère les coordonnées.
+    p@(Player _ _ (x, y) _ _ _) <- readIORef playerRef
     
-    -- Affiche le perso et rafraichis l'image
+    -- Affiche le personnage et rafraichit l'image.
     SDL.fillRect scr (Just (Rect 0 0 500 640)) (Pixel 0x000000)
     player <- getImage "player"
     Resources.displaySurface player scr (x - 16) (y - 25)
     return ()
 
+-- Pseudo pattern servant à tester le gameplay.
 patt = Simple fx fy fr 0 60000 "ball"
        
        where fx t = 300.0
              fy t = 300.0
 	     fr t = 12.0
 
--- Boucle gère les contrôles du joueur
+-- Boucle gérant les contrôles du joueur.
 loop :: UTCTime -> IO ()
 loop t0 =
   do
     evt <- SDL.pollEvent
     case evt of
-      Quit                     -> exitWith ExitSuccess
-      KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess
+      Quit                     -> exitWith ExitSuccess -- Gestion de la fermeture (appui sur 'q').
+      KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess -- Gestion de la fermeture (clic sur la croix).
       KeyDown (Keysym sym _ _) -> manageKeyDown sym
       KeyUp (Keysym sym _ _)   -> manageKeyUp sym
       _                        -> return ()
     
-    -- Modifie les coordonnées en fonction de la vitesse (ralenti si appuis sur Shift)
+    -- Modifie les coordonnées en fonction de la vitesse (ralenti si appuis sur Shift/Majuscule).
     mod <- getModState
     if KeyModLeftShift `elem` mod
-    then modifyIORef' joueur (setPosition 1)
-    else modifyIORef' joueur (setPosition 3)
+    then modifyIORef' playerRef (setPosition 1)
+    else modifyIORef' playerRef (setPosition 3)
     
-    -- Affiche le perso, attend 20ms, et boucle
+    -- Affiche le perso, attend 20ms, et boucle.
     t1 <- getCurrentTime
     let t = truncate $ (diffUTCTime t1 t0) * 1000
 
     scr <- SDL.getVideoSurface
 
-    blitPerso
+    -- Affichage du personnage, des projectiles et mise à jour de l'écran.
+    displayPlayer
     displayBullets scr t [patt]
     SDL.flip scr
 
+    -- Pause stratégique.
     wait 20
     
-    player <- readIORef joueur
+    player <- readIORef playerRef
 
+    -- Ne reboucle que si la hitbox du personnage est sauve.
     case playerBulletCollision (fromIntegral t) [patt] player of
       True  -> return ()
       False -> loop t0
 
     where
-      -- L'utilisateur a appuyé sur une touche
+      -- L'utilisateur a appuyé sur une touche.
       manageKeyDown sym =
         case sym of
           SDLK_UP    -> setDirUp True
@@ -167,11 +137,11 @@ loop t0 =
           SDLK_RIGHT -> setDirRight True
           SDLK_w     -> do
             playPlayerBullet           
-            setFiring True
+            setFiring True -- Le joueur est en train de tirer.
           SDLK_x     -> playSpellCard
           _          -> return ()
 
-      -- L'utilisateur a relaché une touche
+      -- L'utilisateur a relaché une touche.
       manageKeyUp sym =
         case sym of
           SDLK_UP    -> setDirUp False
@@ -183,15 +153,15 @@ loop t0 =
             setFiring False
           _          -> return ()
 
--- Le joueur
-joueur :: IORef Player
-joueur = unsafePerformIO $ newIORef (Player False (False, False, False, False) (100, 100) 0 0 0)
+-- Définition d'une référence représentant le joueur.
+playerRef :: IORef Player
+playerRef = unsafePerformIO $ newIORef (Player False (False, False, False, False) (100, 100) 0 0 0)
 
--- Donnée définissant les directions
-data Dir = UP | DOWN | LEFT | RIGHT deriving (Eq)
+-- Donnée définissant les directions.
+data Direction = UP | DOWN | LEFT | RIGHT deriving (Eq)
 
--- Fonction qui modifie le tuple 'dir' d'un joueur en fonction de d et b
-setDirection :: Dir -> Bool -> Player -> Player
+-- Fonction qui modifie le tuple 'dir' du joueur en fonction de d et b.
+setDirection :: Direction -> Bool -> Player -> Player
 setDirection d b (p@(Player isf (up, down, left, right) pos pow bomb l))
   | d == UP    = Player isf (b, down, left, right) pos pow bomb l
   | d == DOWN  = Player isf (up, b, left, right) pos pow bomb l
@@ -199,25 +169,26 @@ setDirection d b (p@(Player isf (up, down, left, right) pos pow bomb l))
   | d == RIGHT = Player isf (up, down, left, b) pos pow bomb l
   | otherwise  = p
 
--- FONCTIONS DE MODIFICATION DE DIRECTION
+-- FONCTIONS DE MODIFICATION DE DIRECTION.
 setDirUp :: Bool -> IO ()
-setDirUp v = modifyIORef' joueur (setDirection UP v)
+setDirUp v = modifyIORef' playerRef (setDirection UP v)
 
 setDirDown :: Bool -> IO ()
-setDirDown v = modifyIORef' joueur (setDirection DOWN v)
+setDirDown v = modifyIORef' playerRef (setDirection DOWN v)
 
 setDirLeft :: Bool -> IO ()
-setDirLeft v = modifyIORef' joueur (setDirection LEFT v)
+setDirLeft v = modifyIORef' playerRef (setDirection LEFT v)
 
 setDirRight :: Bool -> IO ()
-setDirRight v = modifyIORef' joueur (setDirection RIGHT v)
+setDirRight v = modifyIORef' playerRef (setDirection RIGHT v)
 
 setFiring :: Bool -> IO ()
-setFiring v = modifyIORef' joueur (\(Player _ b c d e f) -> (Player v b c d e f))
+setFiring v = modifyIORef' playerRef (\(Player _ b c d e f) -> (Player v b c d e f))
 
--- Fonction calculant les coordonnées d'un joueur en fonction de ses coord actuelles et de sa direction
+-- Fonction calculant les coordonnées du joueur en fonction de ses coordonnées actuelles et de sa direction.
 setPosition :: Int -> Player -> Player
 setPosition v pl@(Player q r@(h, b, g, d) (ox, oy) m o p)
+  -- La garde suivante permet un test des collisions avec le bord de l'écran.
   | (h == True) && oy <= 15  = pl
   | (b == True) && oy >= 618 = pl
   | (g == True) && ox <= 12  = pl
@@ -227,4 +198,3 @@ setPosition v pl@(Player q r@(h, b, g, d) (ox, oy) m o p)
   where
     y = if (h == b) then 0 else if h then (-v) else v
     x = if (g == d) then 0 else if g then (-v) else v
-

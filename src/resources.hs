@@ -81,10 +81,9 @@ addRes r@(name,_) env =
   do
     l <- readIORef env
     
-    if (L.any (hasName name) l) then
-      return ()
-    else
-      modifyIORef' env (r:)
+    if (L.any (hasName name) l)
+      then return ()
+      else modifyIORef' env (r:)
 
 -- Récupère une resource nommée 'name' dans un environment 'env'
 getRes :: IORef (Environment a) -> String -> IO (Maybe a)

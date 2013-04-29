@@ -58,23 +58,25 @@ veramono n = TTF.openFont (fontDir ++ "VeraMono.ttf") n
 -- Affiche un texte centré.
 
 renderCenteredText :: Font -> String -> Color -> Surface -> Int -> IO ()
-renderCenteredText f s c scr y = do
-					(x, _) <- TTF.textSize f s
-					text <- TTF.tryRenderTextBlended f s c
-					Resources.displaySurface text scr (centered'x x) y
-					
-					return ()
-					where
-						centered'x x = 250 - (quot x 2)
+renderCenteredText f s c scr y =
+  do
+    (x, _) <- TTF.textSize f s
+    text <- TTF.tryRenderTextBlended f s c
+    Resources.displaySurface text scr (centered'x x) y
+
+    return ()
+
+    where centered'x x = 250 - (quot x 2)
 
 -- Police -> Lignes -> Couleur -> Ecran -> Coordonnées -> Espace entre chaque ligne -> Retour
 renderAlignedText :: Font -> [String] -> Color -> Surface -> (Int, Int) -> Int -> IO ()
 renderAlignedText _ [] _ _ _ _ = return ()
-renderAlignedText f (s:ss) c scr (x, y) step = do
-	(_, h) <- TTF.textSize f s
-	text <- TTF.tryRenderTextBlended f s c
-	Resources.displaySurface text scr x y
+renderAlignedText f (s:ss) c scr (x, y) step =
+ do
+   (_, h) <- TTF.textSize f s
+   text <- TTF.tryRenderTextBlended f s c
+   Resources.displaySurface text scr x y
 
-	renderAlignedText f ss c scr (x, new'y h) step
-					       
-	where new'y h = y + h + step -- position + pas + taille du texte.
+   renderAlignedText f ss c scr (x, new'y h) step
+   
+   where new'y h = y + h + step -- position + pas + taille du texte.
