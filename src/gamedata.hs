@@ -39,3 +39,28 @@ data Player = Player { isFiring :: Bool
                       ,lives    :: Int 
                      }
 
+-- Droite symbolisant le côté gauche du cône de tir du joueur.
+firingFunction :: Player -> Float -> Maybe Float
+firingFunction (Player _ _ (x,y) _ _ _) = \t -> if t < fy then Just (3.0 * t + fx) else Nothing
+
+  where fx = fromIntegral x
+        fy = fromIntegral y
+
+-- Droite symbolisant le côté droit du cône de tir du joueur.
+reversedFiringFunction :: Player -> Float -> Maybe Float
+reversedFiringFunction (Player _ _ (x,y) _ _ _) = \t -> if t < fy then Just (500 - fx - 3.0 * t) else Nothing
+
+  where fx = fromIntegral x
+        fy = fromIntegral y
+
+-- Prédicat vérifiant si un ennemi placé en (ex, ey) est touché par le tir
+fired :: Player -> (Float, Float) -> Bool
+fired player (ex, ey) = case (test2 ex (reversedFiringFunction player ey), test (firingFunction player ey) ex) of
+                          (True, True) -> True
+			  (_, _)       -> False
+
+  where test Nothing  _  = False
+        test (Just x) ex = x < ex
+
+	test2 _ Nothing   = False
+	test2 ex (Just x) = x > ex
