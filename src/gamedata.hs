@@ -30,6 +30,9 @@
 
 module GameData where
 
+import Data.IORef
+import System.IO.Unsafe
+
 -- Le joueur est représenté par sa position, la direction de son déplacement, ses vies, ses bombes et s'il tire.
 data Player = Player { isFiring :: Bool
                       ,dir      :: (Bool, Bool, Bool, Bool)
@@ -64,3 +67,49 @@ fired player (ex, ey) = case (test2 ex (reversedFiringFunction player ey), test 
 
 	test2 _ Nothing   = False
 	test2 ex (Just x) = x > ex
+
+-- Définition d'une référence représentant le joueur.
+playerRef :: IORef Player
+playerRef = unsafePerformIO $ newIORef (Player False (False, False, False, False) (100, 100) 0 0 0)
+
+-- Donnée définissant les directions.
+data Direction = UP | DOWN | LEFT | RIGHT deriving (Eq)
+
+-- Fonction qui modifie le tuple 'dir' du joueur en fonction de d et b.
+setDirection :: Direction -> Bool -> Player -> Player
+setDirection d b (p@(Player isf (up, down, left, right) pos pow bomb l))
+  | d == UP    = Player isf (b, down, left, right) pos pow bomb l
+  | d == DOWN  = Player isf (up, b, left, right) pos pow bomb l
+  | d == LEFT  = Player isf (up, down, b, right) pos pow bomb l
+  | d == RIGHT = Player isf (up, down, left, b) pos pow bomb l
+  | otherwise  = p
+
+-- FONCTIONS DE MODIFICATION DE DIRECTION.
+setDirUp :: Bool -> IO ()
+setDirUp v = modifyIORef' playerRef (setDirection UP v)
+
+setDirDown :: Bool -> IO ()
+setDirDown v = modifyIORef' playerRef (setDirection DOWN v)
+
+setDirLeft :: Bool -> IO ()
+setDirLeft v = modifyIORef' playerRef (setDirection LEFT v)
+
+setDirRight :: Bool -> IO ()
+setDirRight v = modifyIORef' playerRef (setDirection RIGHT v)
+
+setFiring :: Bool -> IO ()
+setFiring v = modifyIORef' playerRef (\(Player _ b c d e f) -> (Player v b c d e f))
+
+-- Fonction calculant les coordonnées du joueur en fonction de ses coordonnées actuelles et de sa direction.
+setPosition :: Int -> Player -> Player
+setPosition v pl@(Player q r@(h, b, g, d) (ox, oy) m o p)
+  -- La garde suivante permet un test des collisions avec le bord de l'écran.
+  | (h == True) && oy <= 15  = pl
+  | (b == True) && oy >= 618 = pl
+  | (g == True) && ox <= 12  = pl
+  | (d == True) && ox >= 485 = pl
+  | otherwise                = Player q r (ox+x, oy+y) m o p
+
+  where
+    y = if (h == b) then 0 else if h then (-v) else v
+    x = if (g == d) then 0 else if g then (-v) else v
