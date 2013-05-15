@@ -40,8 +40,6 @@ import Bullet
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Mixer as MIx
 
-import Scripting.Lua as Lua
-import LuaWrapper as HsLua
 import System.Exit
 import Data.IORef
 import Data.Time
@@ -51,20 +49,10 @@ import System.IO.Unsafe
 newGame :: Surface -> IO ()
 newGame scr =
   do
-    lua <- Lua.newstate
-    Lua.openlibs lua
-
-    Lua.registerhsfunction lua "hsPrint" HsLua.hsPrint
-    HsLua.dofile lua "rc/game.lua"
-
-    HsLua.fcall lua "main" 0 0
-    
     enableKeyRepeat 0 0
 
     t0 <- getCurrentTime
     loop t0
-    
-    Lua.close lua
 
 -- Affiche le personnage à l'écran et son cône de tir si celui-ci est nécessaire.
 displayPlayer :: IO ()

@@ -33,6 +33,8 @@ module GameData where
 import Data.IORef
 import System.IO.Unsafe
 
+type TimeFunction = Float -> Float
+
 -- Le joueur est représenté par sa position, la direction de son déplacement, ses vies, ses bombes et s'il tire.
 data Player = Player { isFiring :: Bool
                       ,dir      :: (Bool, Bool, Bool, Bool)
@@ -41,6 +43,13 @@ data Player = Player { isFiring :: Bool
                       ,bombs    :: Int
                       ,lives    :: Int 
                      }
+
+-- Un ennemi est représenté par sa position dans le temps, son sprite et sa vie.
+data Ennemy = Ennemy { pos_x  :: TimeFunction
+                      ,pos_y  :: TimeFunction
+		      ,sprite :: String
+		      ,life   :: Int
+		     }
 
 -- Droite symbolisant le côté gauche du cône de tir du joueur.
 firingFunction :: Player -> Float -> Maybe Float
@@ -57,10 +66,11 @@ reversedFiringFunction (Player _ _ (x,y) _ _ _) = \t -> if t < fy then Just (500
         fy = fromIntegral y
 
 -- Prédicat vérifiant si un ennemi placé en (ex, ey) est touché par le tir
-fired :: Player -> (Float, Float) -> Bool
-fired player (ex, ey) = case (test2 ex (reversedFiringFunction player ey), test (firingFunction player ey) ex) of
-                          (True, True) -> True
-			  (_, _)       -> False
+collisionFireEnnemy :: Player -> (Float, Float) -> Bool
+collisionFireEnnemy player (ex, ey) =
+  case (test2 ex (reversedFiringFunction player ey), test (firingFunction player ey) ex) of
+    (True, True) -> True
+    (_, _)       -> False
 
   where test Nothing  _  = False
         test (Just x) ex = x < ex

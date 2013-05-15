@@ -36,9 +36,6 @@ import Graphics.UI.SDL as SDL
 import Resources
 import GameData
 
--- Les paramètres des projectiles (coordonnées et rayon) sont fonctions du temps.
-type TimeFunction = Float -> Float
-
 -- Fonction du temps nulle. Permet une écriture plus rapide de fonctions neutres.
 nullTimeFunction :: TimeFunction
 nullTimeFunction _ = 0.0
