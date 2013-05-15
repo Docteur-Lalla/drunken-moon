@@ -36,6 +36,7 @@ import Music
 import Time
 import GameData as GD
 import Bullet
+import Reimu as LV1
 
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Mixer as MIx
@@ -52,7 +53,7 @@ newGame scr =
     enableKeyRepeat 0 0
 
     t0 <- getCurrentTime
-    loop t0 []
+    loop t0 LV1.run []
 
 -- Affiche le personnage à l'écran et son cône de tir si celui-ci est nécessaire.
 displayPlayer :: IO ()
@@ -81,16 +82,9 @@ displayFire scr p@(Player _ _ (x,y) _ _ _) =
     Resources.displaySurface fire scr posx y
     return ()
 
--- Pseudo pattern servant à tester le gameplay.
-patt = Simple fx fy fr 0 60000 "ball"
-       
-       where fx t = 300.0
-             fy t = 300.0
-	     fr t = 12.0
-
 -- Boucle gérant les contrôles du joueur.
-loop :: UTCTime -> [Ennemy] -> IO ()
-loop t0 ennemies =
+loop :: UTCTime -> [Pattern] -> [Ennemy] -> IO ()
+loop t0 patts ennemies =
   do
     evt <- SDL.pollEvent
     case evt of
@@ -117,16 +111,16 @@ loop t0 ennemies =
 
     -- Affichage du personnage, des projectiles et mise à jour de l'écran.
     displayPlayer
-    displayBullets scr t [patt]
+    displayBullets scr t patts
     SDL.flip scr
 
     -- Pause stratégique.
     wait 20
 
     -- Ne reboucle que si la hitbox du personnage est sauve.
-    case playerBulletCollision (fromIntegral t) [patt] player of
+    case playerBulletCollision (fromIntegral t) patts player of
       True  -> return ()
-      False -> loop t0 new_ennemies
+      False -> loop t0 (cleanBulletList t patts) new_ennemies
 
     where
       -- L'utilisateur a appuyé sur une touche.

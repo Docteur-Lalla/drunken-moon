@@ -94,7 +94,7 @@ killEnnemies (e:es)                = e : killEnnemies es
 
 -- Définition d'une référence représentant le joueur.
 playerRef :: IORef Player
-playerRef = unsafePerformIO $ newIORef (Player False (False, False, False, False) (100, 100) 0 0 0)
+playerRef = unsafePerformIO $ newIORef (Player False (False, False, False, False) (250, 350) 0 0 0)
 
 -- Donnée définissant les directions.
 data Direction = UP | DOWN | LEFT | RIGHT deriving (Eq)
