@@ -33,12 +33,19 @@ module Reimu(run) where
 import Bullet
 
 vline n = Complex (map ball [-450, -300, -150, 0, 150, 300, 450, 600]) nullTimeFunction nullTimeFunction
-          where ball posy = (Simple fx (fy posy) fr (10 * n) 5000 "ball", 0)
+          where ball posy = (Simple fx (fy posy) fr (5 * n) 5000 "ball", 0)
 	        fx t = 1.0 * fromIntegral n
 	        fy posy t = 1.0 * fromIntegral (posy + n)
 	        fr t = 12.0
 
-grid = Complex (map lines [0, 10..500]) nullTimeFunction nullTimeFunction
+vline' n = Complex (map ball [-450, -300, -150, 0, 150, 300, 450, 600]) nullTimeFunction nullTimeFunction
+           where ball posy = (Simple fx (fy posy) fr (5 * n) 5000 "ball", 0)
+	         fx t = 500 - 1.0 * fromIntegral n
+	         fy posy t = 1.0 * fromIntegral (posy + n)
+	         fr t = 12.0
+
+grid = Complex ((map lines [0, 10..500]) ++ (map lines' [0, 10..500])) nullTimeFunction nullTimeFunction
        where lines n = (vline n, 0)
+             lines' n = (vline' n, 0)
 
 run = bulletList grid
