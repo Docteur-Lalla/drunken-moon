@@ -52,7 +52,7 @@ newGame scr =
     enableKeyRepeat 0 0
 
     t0 <- getCurrentTime
-    loop t0
+    loop t0 []
 
 -- Affiche le personnage à l'écran et son cône de tir si celui-ci est nécessaire.
 displayPlayer :: IO ()
@@ -89,8 +89,8 @@ patt = Simple fx fy fr 0 60000 "ball"
 	     fr t = 12.0
 
 -- Boucle gérant les contrôles du joueur.
-loop :: UTCTime -> IO ()
-loop t0 =
+loop :: UTCTime -> [Ennemy] -> IO ()
+loop t0 ennemies =
   do
     evt <- SDL.pollEvent
     case evt of
@@ -111,7 +111,7 @@ loop t0 =
     let t = truncate $ (diffUTCTime t1 t0) * 1000
     
     player <- readIORef playerRef
-    -- let new_ennemies = killEnnemies $ manageFireEnnemyCollision player t ennemies
+    let new_ennemies = killEnnemies $ manageFireEnnemyCollision player (fromIntegral t) ennemies
 
     scr <- SDL.getVideoSurface
 
@@ -126,7 +126,7 @@ loop t0 =
     -- Ne reboucle que si la hitbox du personnage est sauve.
     case playerBulletCollision (fromIntegral t) [patt] player of
       True  -> return ()
-      False -> loop t0
+      False -> loop t0 new_ennemies
 
     where
       -- L'utilisateur a appuyé sur une touche.
