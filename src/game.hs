@@ -106,9 +106,12 @@ loop t0 =
     then modifyIORef' playerRef (setPosition 1)
     else modifyIORef' playerRef (setPosition 3)
     
-    -- Affiche le perso, attend 20ms, et boucle.
+    -- Affiche le personnage, attend 20ms, et boucle.
     t1 <- getCurrentTime
     let t = truncate $ (diffUTCTime t1 t0) * 1000
+    
+    player <- readIORef playerRef
+    -- let new_ennemies = killEnnemies $ manageFireEnnemyCollision player t ennemies
 
     scr <- SDL.getVideoSurface
 
@@ -119,8 +122,6 @@ loop t0 =
 
     -- Pause stratégique.
     wait 20
-    
-    player <- readIORef playerRef
 
     -- Ne reboucle que si la hitbox du personnage est sauve.
     case playerBulletCollision (fromIntegral t) [patt] player of

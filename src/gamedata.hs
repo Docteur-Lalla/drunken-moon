@@ -65,10 +65,10 @@ reversedFiringFunction (Player _ _ (x,y) _ _ _) = \t -> if t < fy then Just (500
   where fx = fromIntegral x
         fy = fromIntegral y
 
--- Prédicat vérifiant si un ennemi placé en (ex, ey) est touché par le tir
-collisionFireEnnemy :: Player -> (Float, Float) -> Bool
-collisionFireEnnemy player (ex, ey) =
-  case (test2 ex (reversedFiringFunction player ey), test (firingFunction player ey) ex) of
+-- Prédicat vérifiant si un ennemi placé en (ex, ey) est touché par le tir.
+collisionFireEnnemy :: Player -> Float -> Ennemy -> Bool
+collisionFireEnnemy player t (Ennemy ex ey _ _) =
+  case (test2 (ex t) (reversedFiringFunction player (ey t)), test (firingFunction player (ey t)) (ex t)) of
     (True, True) -> True
     (_, _)       -> False
 
@@ -77,6 +77,20 @@ collisionFireEnnemy player (ex, ey) =
 
 	test2 _ Nothing   = False
 	test2 ex (Just x) = x > ex
+
+-- Vérifie si un ennemi est touché et retranche 1 à sa vie.
+manageFireEnnemyCollision :: Player -> Float -> [Ennemy] -> [Ennemy]
+manageFireEnnemyCollision pl t []                      = []
+manageFireEnnemyCollision pl t (e@(Ennemy x y s l):es) =
+  if collisionFireEnnemy pl t e
+    then (Ennemy x y s (l - 1)) : manageFireEnnemyCollision pl t es
+    else e : manageFireEnnemyCollision pl t es
+
+-- Elimine les ennemis ayant 0 de vie.
+killEnnemies :: [Ennemy] -> [Ennemy]
+killEnnemies []                    = []
+killEnnemies ((Ennemy _ _ _ 0):es) = killEnnemies es
+killEnnemies (e:es)                = e : killEnnemies es
 
 -- Définition d'une référence représentant le joueur.
 playerRef :: IORef Player
