@@ -82,10 +82,10 @@ displayFire scr p@(Player _ _ (x,y) _ _ _) =
     return ()
 
 -- Pseudo pattern servant à tester le gameplay.
-patt = Simple fx fy fr 0 60000 "ball"
+patt = Simple fx fy fr 0 1 "ball"
        
-       where fx t = 300.0
-             fy t = 300.0
+       where fx t = 50.0 * (cos t) + 300.0
+             fy t = 50.0 * (sin t) + 300.0
 	     fr t = 12.0
 
 -- Boucle gérant les contrôles du joueur.
@@ -124,7 +124,7 @@ loop t0 ennemies =
     wait 20
 
     -- Ne reboucle que si la hitbox du personnage est sauve.
-    case playerBulletCollision (fromIntegral t) [patt] player of
+    case playerBulletCollision t [patt] player of
       True  -> return ()
       False -> loop t0 new_ennemies
 

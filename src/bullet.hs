@@ -138,9 +138,9 @@ cleanBulletList :: Int -> [Pattern] -> [Pattern]
 cleanBulletList t patt = cleanBulletList' t [] patt
 
 -- Test de collision entre les projectiles et le joueur.
-playerBulletCollision :: Float -> [Pattern] -> Player -> Bool
+playerBulletCollision :: Int -> [Pattern] -> Player -> Bool
 playerBulletCollision _ [] _                                                     = False
-playerBulletCollision t ((Simple fx fy fr _ _ _):xs) p@(Player _ _ (x, y) _ _ _) =
+playerBulletCollision t ((Simple fx fy fr sp _ _):xs) p@(Player _ _ (x, y) _ _ _) =
   if ret then True else playerBulletCollision t xs p
 
   {-
@@ -148,9 +148,9 @@ playerBulletCollision t ((Simple fx fy fr _ _ _):xs) p@(Player _ _ (x, y) _ _ _)
    à la distance entre les centres de ceux-ci (position des deux objets), alors il y a collision.
    -}
   
-  where x' = fx t
-        y' = fy t
-	r' = fr t
+  where x' = fx (fromIntegral (t - sp) / 1000.0)
+        y' = fy (fromIntegral (t - sp) / 1000.0)
+	r' = fr (fromIntegral (t - sp) / 1000.0)
 
         xf = fromIntegral x
 	yf = fromIntegral y
