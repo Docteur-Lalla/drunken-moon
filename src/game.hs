@@ -36,6 +36,7 @@ import Music
 import Time
 import GameData as GD
 import Bullet
+import Reimu as LV1
 
 import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.Mixer as MIx
@@ -44,15 +45,14 @@ import System.Exit
 import Data.IORef
 import Data.Time
 import System.IO.Unsafe
-
 -- Crée une partie.
 newGame :: Surface -> IO ()
 newGame scr =
   do
     enableKeyRepeat 0 0
 
-    t0 <- getCurrentTime
-    loop t0 []
+    generalLoop 1 StartStage
+    return ()
 
 -- Affiche le personnage à l'écran et son cône de tir si celui-ci est nécessaire.
 displayPlayer :: IO ()
@@ -81,22 +81,71 @@ displayFire scr p@(Player _ _ (x,y) _ _ _) =
     Resources.displaySurface fire scr posx y
     return ()
 
--- Pseudo pattern servant à tester le gameplay.
-patt = Simple fx fy fr 0 1 "ball"
+data GameState
+  = Finished
+  | Dead
+  -- | Leave Pourquoi pas un abandon de la partie ?
+  | StartStage
+  | StageComplete
+
+-- Variable définissant le dernier niveau ... pour l'instant 1 ...
+lastLvl = 1
+
+-- Boucle générale, gère les différentes étapes du jeu (fadein/out entre les stages, mort, fin du jeu, abandon)
+generalLoop :: Int -> GameState -> IO (GameState)
+generalLoop lvl state =
+  do
+    
+    {-
+      Agis en fonction de l'état 'state':
+        - StartStage -> lance le prochain niveau (lvl définit quel niveau lancer)
+        - StageComplete -> quand le niveau est fini, on test si c'était le dernier
+          si oui, on a fini le jeu sinon on lance le prochain stage
+        - Finished/Dead/Leave -> Fin du jeu, soit on l'a fini, soit on est mort, soit on a abandonné 
+          (retourne à newGame, qui va agir en fonction de la façon dont le jeu s'est terminé)
+    -}
+    
+    case state of
+      StartStage    -> start lvl
+      StageComplete -> if lvl == lastLvl 
+                       then return Finished
+                       else next lvl
+      x             -> return x
        
-       where fx t = 50.0 * (cos t) + 300.0
-             fy t = 50.0 * (sin t) + 300.0
-	     fr t = 12.0
+  where
+    -- start effectue un fondu en faisant apparaitre le niveau, puis lance loop (le niveau en lui même)
+    start lvl =
+      do
+        fadeIn 0
+        t0 <- getCurrentTime
+        st <- loop t0 LV1.run []
+        generalLoop lvl st
+    
+    -- next va noircir l'écran, pusi lancer le stage suivant
+    next lvl =
+      do
+        fadeOut 255
+        generalLoop (lvl+1) StartStage
+
+-- Fonctions de fadeIn/fadeOut de l'écran entre chaque niveau
+fadeIn :: Int -> IO ()
+fadeIn _ = return ()
+
+fadeOut :: Int -> IO ()
+fadeOut _ = return ()
 
 -- Boucle gérant les contrôles du joueur.
-loop :: UTCTime -> [Ennemy] -> IO ()
-loop t0 ennemies =
+loop :: UTCTime -> [Pattern] -> [Ennemy] -> IO (GameState)
+loop t0 patts ennemies =
   do
+    let tpause = 0
     evt <- SDL.pollEvent
     case evt of
       Quit                     -> exitWith ExitSuccess -- Gestion de la fermeture (appui sur 'q').
       KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess -- Gestion de la fermeture (clic sur la croix).
-      KeyDown (Keysym sym _ _) -> manageKeyDown sym
+      KeyDown (Keysym sym _ _) -> do
+        tpause <- manageKeyDown sym
+        return ()
       KeyUp (Keysym sym _ _)   -> manageKeyUp sym
       _                        -> return ()
     
@@ -110,37 +159,54 @@ loop t0 ennemies =
     t1 <- getCurrentTime
     let t = truncate $ (diffUTCTime t1 t0) * 1000
     
+    -- Teste les collisions entre le cône de tir et les ennemis.
     player <- readIORef playerRef
-    let new_ennemies = killEnnemies $ manageFireEnnemyCollision player (fromIntegral t) ennemies
+    let new_ennemies = if isFiring player
+                         then killEnnemies $ manageFireEnnemyCollision player (fromIntegral t) ennemies
+                         else ennemies
 
     scr <- SDL.getVideoSurface
 
     -- Affichage du personnage, des projectiles et mise à jour de l'écran.
     displayPlayer
-    displayBullets scr t [patt]
+    displayBullets scr t patts
     SDL.flip scr
 
     -- Pause stratégique.
     wait 20
 
     -- Ne reboucle que si la hitbox du personnage est sauve.
-    case playerBulletCollision t [patt] player of
-      True  -> return ()
-      False -> loop t0 new_ennemies
+    case playerBulletCollision (fromIntegral t) patts player of
+      True  -> return (Dead)
+      False -> loop (addUTCTime tpause t0) (cleanBulletList t patts) new_ennemies
 
     where
-      -- L'utilisateur a appuyé sur une touche.
-      manageKeyDown sym =
+      {-
+        L'utilisateur a appuyé sur une touche
+        
+        Comme cette fonction gère le fait qu'on entre en pause
+        elle va renvoyer une différence de temps (le temps de la pause)
+        si on sort d'une pause tp = temps de la pause
+        sinon, tp = 0 car on a pas effectué de pause
+
+      -}
+      manageKeyDown :: SDLKey -> IO (NominalDiffTime)
+      manageKeyDown sym = do
+        let tp = 0
         case sym of
-          SDLK_UP    -> setDirUp True
-          SDLK_DOWN  -> setDirDown True
-          SDLK_LEFT  -> setDirLeft True
-          SDLK_RIGHT -> setDirRight True
-          SDLK_w     -> do
+          SDLK_UP     -> setDirUp True
+          SDLK_DOWN   -> setDirDown True
+          SDLK_LEFT   -> setDirLeft True
+          SDLK_RIGHT  -> setDirRight True
+          SDLK_w      -> do
             playPlayerBullet           
             setFiring True -- Le joueur est en train de tirer.
-          SDLK_x     -> playSpellCard
-          _          -> return ()
+          SDLK_x      -> playSpellCard
+          SDLK_ESCAPE -> do
+            tp <- getCurrentTime >>= gamePause -- Lance la pause
+            return ()
+          _           -> return ()
+        return tp
 
       -- L'utilisateur a relaché une touche.
       manageKeyUp sym =
@@ -153,3 +219,14 @@ loop t0 ennemies =
             haltChannel 2
             setFiring False
           _          -> return ()
+
+-- gère la pause pendant une partie
+gamePause :: UTCTime -> IO (NominalDiffTime)
+gamePause t0 =
+  do
+    evt <- SDL.pollEvent
+    case evt of
+      KeyDown _ -> do
+        t1 <- getCurrentTime
+        return (diffUTCTime t1 t0)
+      _         -> gamePause t0

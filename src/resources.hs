@@ -139,6 +139,7 @@ initEnvironment =
     addImage "suika" "rc/images/Suika.jpeg"
     addImage "sun" "rc/images/sun.jpg"
     addImage "ball" "rc/images/ball.png"
+    addImage "player" "rc/images/sprite_suika.png"
 	
     -- Ajoute les sons
     addSound "select" "rc/sounds/select00.wav"
@@ -148,13 +149,6 @@ initEnvironment =
     addSound "playerdie" "rc/sounds/pldead00.wav"
     addSound "bossdie" "rc/sounds/enep01.wav"
     addSound "spellcard" "rc/sounds/cat00.wav"
-
-    -- Ajoute Suika (temporaire)
-    do
-      i <- (IMG.load "rc/images/sprite_suika.jpeg")
-      b <- SDL.setColorKey i [SrcColorKey] (Pixel 0xAAAAFF)
-      displayFormatAlpha i
-      addRes ("player", i) image_map
 	
 -- Libère toutes les resources de la mémoire
 freeEnvironment :: IO ()
