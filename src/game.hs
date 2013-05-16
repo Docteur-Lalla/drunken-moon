@@ -73,11 +73,12 @@ displayPlayer =
       then return ()
       else displayFire scr p
 
+-- Affiche le cône de tir du joueur.
 displayFire :: Surface -> Player -> IO ()
 displayFire scr p@(Player _ _ (x,y) _ _ _) =
   do
     fire <- getImage "fire"
-    let posx = x - 200
+    let posx = x - 200 -- Ajuste la position du cône pour qu'il soit placer juste au dessus du joueur.
 
     Resources.displaySurface fire scr posx y
     return ()
@@ -104,8 +105,11 @@ loop t0 patts ennemies =
     t1 <- getCurrentTime
     let t = truncate $ (diffUTCTime t1 t0) * 1000
     
+    -- Teste les collisions entre le cône de tir et les ennemis.
     player <- readIORef playerRef
-    let new_ennemies = killEnnemies $ manageFireEnnemyCollision player (fromIntegral t) ennemies
+    let new_ennemies = if isFiring player
+                         then killEnnemies $ manageFireEnnemyCollision player (fromIntegral t) ennemies
+                         else ennemies
 
     scr <- SDL.getVideoSurface
 
