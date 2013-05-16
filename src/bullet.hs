@@ -140,8 +140,9 @@ cleanBulletList t patt = cleanBulletList' t [] patt
 -- Test de collision entre les projectiles et le joueur.
 playerBulletCollision :: Float -> [Pattern] -> Player -> Bool
 playerBulletCollision _ [] _                                                     = False
-playerBulletCollision t ((Simple fx fy fr _ _ _):xs) p@(Player _ _ (x, y) _ _ _) =
-  if ret then True else playerBulletCollision t xs p
+playerBulletCollision t ((Simple fx fy fr s _ _):xs) p@(Player _ _ (x, y) _ _ _)
+  | t < fromIntegral s = playerBulletCollision t xs p
+  | otherwise = if ret then True else playerBulletCollision t xs p
 
   {-
    Si l'addition du rayon du projectile et de celui de la hitbox du personnage est supérieure

@@ -96,6 +96,11 @@ killEnnemies (e:es)                = e : killEnnemies es
 playerRef :: IORef Player
 playerRef = unsafePerformIO $ newIORef (Player False (False, False, False, False) (250, 350) 0 0 0)
 
+-- Fonction recréant un joueur tel qu'il est au démarrage du jeu.
+resetPlayer :: IO ()
+resetPlayer = modifyIORef' playerRef reset
+  where reset pl = (Player False (False, False, False, False) (250, 350) 0 0 0)
+
 -- Donnée définissant les directions.
 data Direction = UP | DOWN | LEFT | RIGHT deriving (Eq)
 

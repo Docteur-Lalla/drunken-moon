@@ -55,6 +55,8 @@ newGame scr =
     t0 <- getCurrentTime
     loop t0 LV1.run []
 
+    resetPlayer
+
 -- Affiche le personnage à l'écran et son cône de tir si celui-ci est nécessaire.
 displayPlayer :: IO ()
 displayPlayer =
