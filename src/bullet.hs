@@ -121,8 +121,8 @@ displayBullets scr t ((Simple fx fy fr sp l s):xs) =
 
     displayBullets scr t xs -- On affiche les projectiles suivants.
 
-    where x = truncate $ (fx (fromIntegral (t - sp) / 1000.0))
-          y = truncate $ (fy (fromIntegral (t - sp) / 1000.0))
+    where x = truncate $ (fx (fromIntegral (t - sp)))
+          y = truncate $ (fy (fromIntegral (t - sp)))
 
 -- Nettoyage de la liste des projectiles selon leur durée de vie (fonction auxiliaire).
 cleanBulletList' :: Int -> [Pattern] -> [Pattern] -> [Pattern]
@@ -140,8 +140,10 @@ cleanBulletList t patt = cleanBulletList' t [] patt
 -- Test de collision entre les projectiles et le joueur.
 playerBulletCollision :: Int -> [Pattern] -> Player -> Bool
 playerBulletCollision _ [] _                                                     = False
-playerBulletCollision t ((Simple fx fy fr sp _ _):xs) p@(Player _ _ (x, y) _ _ _) =
-  if ret then True else playerBulletCollision t xs p
+playerBulletCollision t ((Simple fx fy fr sp _ _):xs) p@(Player _ _ (x, y) _ _ _)
+  | t < fromIntegral sp = playerBulletCollision t xs p
+  | otherwise = if ret then True else playerBulletCollision t xs p
+
 
   {-
    Si l'addition du rayon du projectile et de celui de la hitbox du personnage est supérieure
