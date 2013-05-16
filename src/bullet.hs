@@ -121,8 +121,8 @@ displayBullets scr t ((Simple fx fy fr sp l s):xs) =
 
     displayBullets scr t xs -- On affiche les projectiles suivants.
 
-    where x = truncate $ (fx (fromIntegral (t - sp) / 1000.0))
-          y = truncate $ (fy (fromIntegral (t - sp) / 1000.0))
+    where x = truncate $ (fx (fromIntegral (t - sp)))
+          y = truncate $ (fy (fromIntegral (t - sp)))
 
 -- Nettoyage de la liste des projectiles selon leur durée de vie (fonction auxiliaire).
 cleanBulletList' :: Int -> [Pattern] -> [Pattern] -> [Pattern]
