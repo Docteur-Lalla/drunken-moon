@@ -110,7 +110,9 @@ generalLoop lvl state =
       StageComplete -> if lvl == lastLvl 
                        then return Finished
                        else next lvl
-      x             -> return x
+      x             -> do
+                         startBGM "main_theme"
+                         return x
        
   where
     -- start effectue un fondu en faisant apparaitre le niveau, puis lance loop (le niveau en lui même)
