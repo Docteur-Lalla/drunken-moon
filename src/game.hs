@@ -117,6 +117,7 @@ generalLoop lvl state =
     start lvl =
       do
         fadeIn 0
+	LV1.back_music
         t0 <- getCurrentTime
         st <- loop t0 LV1.run []
         generalLoop lvl st

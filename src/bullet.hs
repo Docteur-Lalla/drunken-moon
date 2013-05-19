@@ -56,7 +56,6 @@ data Spellcard = Spellcard { patterns :: [ ([Int], Pattern) ] }
 data Boss = Boss { music :: String, face :: String, spellstart :: [Int], spell :: [(Spellcard, Bool)] }
 
 -- Modifie le pattern pour que les projectiles aient leurs coordonnées absolues et ne dépendent plus de leur père.
-absoluteBullet :: TimeFunction -> TimeFunction -> Pattern -> Pattern
 
 {-
  - Un pattern simple voit ses fonctions de position altérées par celle de leurs pères.
@@ -67,6 +66,7 @@ absoluteBullet :: TimeFunction -> TimeFunction -> Pattern -> Pattern
  patterns (zip).
  -}
 
+absoluteBullet :: TimeFunction -> TimeFunction -> Pattern -> Pattern
 absoluteBullet fx fy (Simple x y r sp l s) = Simple (\t -> x t + fx t) (\t -> y t + fy t) r sp l s
 absoluteBullet fx fy (Complex pl x y)      = Complex np nullTimeFunction nullTimeFunction
 
@@ -121,8 +121,9 @@ displayBullets scr t ((Simple fx fy fr sp l s):xs) =
 
     displayBullets scr t xs -- On affiche les projectiles suivants.
 
-    where x = truncate $ (fx (fromIntegral (t - sp)))
-          y = truncate $ (fy (fromIntegral (t - sp)))
+    where x = truncate $ (fx (fromIntegral (t - sp)) - dr)
+          y = truncate $ (fy (fromIntegral (t - sp)) - dr)
+	  dr = (fr (fromIntegral (t - sp)))
 
 -- Nettoyage de la liste des projectiles selon leur durée de vie (fonction auxiliaire).
 cleanBulletList' :: Int -> [Pattern] -> [Pattern] -> [Pattern]
@@ -150,9 +151,9 @@ playerBulletCollision t ((Simple fx fy fr sp _ _):xs) p@(Player _ _ (x, y) _ _ _
    à la distance entre les centres de ceux-ci (position des deux objets), alors il y a collision.
    -}
   
-  where x' = fx (fromIntegral (t - sp) / 1000.0)
-        y' = fy (fromIntegral (t - sp) / 1000.0)
-	r' = fr (fromIntegral (t - sp) / 1000.0)
+  where x' = fx (fromIntegral (t - sp))
+        y' = fy (fromIntegral (t - sp))
+	r' = fr (fromIntegral (t - sp))
 
         xf = fromIntegral x
 	yf = fromIntegral y

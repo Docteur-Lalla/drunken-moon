@@ -134,11 +134,13 @@ initEnvironment =
     -- Ajoute les musiques
     addMusic "extra_stage_boss" "rc/musics/nightofnights.ogg" 24.75 27.4
     addMusic "main_theme" "rc/musics/brokenmoon.ogg" 10 45.5
+    addMusic "reimu_theme" "rc/musics/reimu_theme.ogg" 31 315
 	
     -- Ajoute les images
     addImage "suika" "rc/images/Suika.jpeg"
     addImage "sun" "rc/images/sun.jpg"
     addImage "ball" "rc/images/ball.png"
+    addImage "yinyang" "rc/images/yinyang.png"
     addImage "player" "rc/images/sprite_suika.png"
 	
     -- Ajoute les sons

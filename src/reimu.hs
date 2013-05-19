@@ -28,24 +28,34 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Reimu(run) where
+module Reimu(run, back_music) where
 
 import Bullet
+import Music
 
-vline n = Complex (map ball [-450, -300, -150, 0, 150, 300, 450, 600]) nullTimeFunction nullTimeFunction
-          where ball posy = (Simple fx (fy posy) fr (5 * n) 5000 "ball", 0)
+vline n = Complex (map ball [-600, -300..600]) nullTimeFunction nullTimeFunction
+          where ball posy = (Simple fx (fy posy) fr (7 * n) 5000 "yinyang", 0)
 	        fx t = 1.0 * fromIntegral n
 	        fy posy t = 1.0 * fromIntegral (posy + n)
-	        fr t = 12.0
+	        fr t = 16.0
 
-vline' n = Complex (map ball [-450, -300, -150, 0, 150, 300, 450, 600]) nullTimeFunction nullTimeFunction
-           where ball posy = (Simple fx (fy posy) fr (5 * n) 5000 "ball", 0)
+vline' n = Complex (map ball [-600, -300..600]) nullTimeFunction nullTimeFunction
+           where ball posy = (Simple fx (fy posy) fr (7 * n) 5000 "yinyang", 0)
 	         fx t = 500 - 1.0 * fromIntegral n
 	         fy posy t = 1.0 * fromIntegral (posy + n)
-	         fr t = 12.0
+	         fr t = 16.0
 
-grid = Complex ((map lines [0, 10..500]) ++ (map lines' [0, 10..500])) nullTimeFunction nullTimeFunction
-       where lines n = (vline n, 0)
-             lines' n = (vline' n, 0)
+grid m = Complex ((map lines [0, 20..500]) ++ (map lines' [0, 20..500])) nullTimeFunction nullTimeFunction
+       where lines n = (vline n, m)
+             lines' n = (vline' n, m)
 
-run = bulletList grid
+fall f = Complex (map balls [0, 100..20000]) nullTimeFunction nullTimeFunction
+       where balls n = (Simple (fx (fromIntegral n)) fy (fr n) (n + 1000) 2000 (sk n), 0)
+             fx n t = f n * 250.0 + 250.0 + t / 1000.0
+	     fy t = 640.0 / 1000.0 * t
+	     fr n _ = if n `mod` 200 == 0 then 16.0 else 12.0
+             sk n = if n `mod` 200 == 0 then "yinyang" else "ball"
+
+run = bulletList (Complex patt nullTimeFunction nullTimeFunction)
+      where patt = [(fall cos, 0), (grid 15000, 0), (fall cos, 21000), (fall sin, 21000)]
+back_music = startBGM "reimu_theme" 
