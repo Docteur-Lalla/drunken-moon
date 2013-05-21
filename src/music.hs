@@ -82,7 +82,7 @@ startBGM name =
       Just r@(m, _, _) -> do
         stopBGM
         writeIORef actual_bgm (Just r)
-        playMusic m 1
+        fadeInMusic m 1 3000
 
 -- Stop la musique de fond
 stopBGM :: IO ()

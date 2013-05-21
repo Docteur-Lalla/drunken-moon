@@ -44,6 +44,7 @@ import Graphics.UI.SDL.Mixer as MIx
 import System.Exit
 import Data.IORef
 import Data.Time
+import Data.Word
 import System.IO.Unsafe
 
 -- Calcul le score actuel du joueur.
@@ -56,15 +57,13 @@ newGame scr =
   do
     enableKeyRepeat 0 0
 
-    generalLoop 1 StartStage
+    generalLoop scr 1 StartStage
     return ()
 
 -- Affiche le personnage à l'écran et son cône de tir si celui-ci est nécessaire.
-displayPlayer :: IO ()
-displayPlayer =
+displayPlayer :: Surface -> IO ()
+displayPlayer scr =
   do
-    -- Récupère l'écran.
-    scr <- SDL.getVideoSurface
     -- Récupère les coordonnées.
     p@(Player _ _ (x, y) _ _ _) <- readIORef playerRef
     
@@ -97,8 +96,8 @@ data GameState
 lastLvl = 1
 
 -- Boucle générale, gère les différentes étapes du jeu (fadein/out entre les stages, mort, fin du jeu, abandon)
-generalLoop :: Int -> GameState -> IO (GameState)
-generalLoop lvl state =
+generalLoop :: Surface -> Int -> GameState -> IO (GameState)
+generalLoop scr lvl state =
   do
     
     {-
@@ -117,30 +116,91 @@ generalLoop lvl state =
                        else next lvl
       x             -> do
                          startBGM "main_theme"
+                         fadeOut scr
                          return x
        
   where
     -- start effectue un fondu en faisant apparaitre le niveau, puis lance loop (le niveau en lui même)
     start lvl =
       do
-        fadeIn 0
-	LV1.back_music
+      
+        fadeIn scr
+        LV1.back_music
         t0 <- getCurrentTime
         st <- loop t0 LV1.run []
-        generalLoop lvl st
+        generalLoop scr lvl st
     
     -- next va noircir l'écran, pusi lancer le stage suivant
     next lvl =
       do
-        fadeOut 255
-        generalLoop (lvl+1) StartStage
+        fadeOut scr
+        generalLoop scr (lvl+1) StartStage
 
 -- Fonctions de fadeIn/fadeOut de l'écran entre chaque niveau
-fadeIn :: Int -> IO ()
-fadeIn _ = return ()
+-- fadeIn -> effectue un fondu faisant apparaitre le niveau
+fadeIn :: Surface -> IO ()
+fadeIn scr = fadeAux 255
+  where
+    fadeAux :: Int -> IO ()
+    fadeAux x = if x <= 0 then return ()
+    else
+      do
 
-fadeOut :: Int -> IO ()
-fadeOut _ = return ()
+        -- Creation du filtre transparent
+        f <- createRGBSurface [HWSurface] 500 640 32 0xFF000000 0xFF0000 0xFF00 0
+
+        -- Coloration du filtre en blanc
+        c <- mapRGB (surfaceGetPixelFormat f) 0xFF 0xFF 0xFF
+        SDL.fillRect f screenRect c
+
+        -- Affichage du background
+        SDL.fillRect scr screenRect (Pixel 0x000000)
+        displayPlayer scr
+
+        -- Ajustement de la transparence du filtre
+        setAlpha f [SrcAlpha] (fromInteger (toInteger x) :: Word8)
+
+        -- Affichage du filtre
+        displaySurface (Just f) scr 0 0
+
+        -- Rafraichissement de l'écran
+        SDL.flip scr
+
+        -- Gestion stable des fps et de la musique
+        wait 20
+
+        -- On recommence avec une opacité moins élevée
+        fadeAux (x-3)
+      where
+        screenRect = (Just (Rect 0 0 500 640))
+
+-- Fonction inverse de fadeIn -> cache l'écran
+fadeOut :: Surface -> IO ()
+fadeOut scr =  fadeAux 0
+  where
+    fadeAux :: Int -> IO ()
+    fadeAux x = if x >= 255 then return ()
+    else
+      do
+        f <- createRGBSurface [HWSurface] 500 640 32 0xFF000000 0xFF0000 0xFF00 0
+
+        c <- mapRGB (surfaceGetPixelFormat f) 0xFF 0xFF 0xFF
+        SDL.fillRect f screenRect c
+
+        SDL.fillRect scr screenRect (Pixel 0x000000)
+        displayPlayer scr
+
+        setAlpha f [SrcAlpha] (fromInteger (toInteger x) :: Word8)
+
+        displaySurface (Just f) scr 0 0
+
+        SDL.flip scr
+
+        wait 20
+
+        fadeAux (x+3)
+      where
+        screenRect = (Just (Rect 0 0 500 640))
 
 -- Boucle gérant les contrôles du joueur.
 loop :: UTCTime -> [Pattern] -> [Ennemy] -> IO (GameState)
@@ -185,7 +245,7 @@ loop t0 patts ennemies =
     scr <- SDL.getVideoSurface
 
     -- Affichage du personnage, des projectiles et mise à jour de l'écran.
-    displayPlayer
+    displayPlayer scr
     displayBullets scr t patts
     SDL.flip scr
 
