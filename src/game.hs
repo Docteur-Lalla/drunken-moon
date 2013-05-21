@@ -140,27 +140,36 @@ fadeOut _ = return ()
 -- Boucle gérant les contrôles du joueur.
 loop :: UTCTime -> [Pattern] -> [Ennemy] -> IO (GameState)
 loop t0 patts ennemies =
-  do
-    let tpause = 0
+  do 
     evt <- SDL.pollEvent
-    case evt of
+    
+    {-
+      Gestion des evenements clavier
+
+      La pause est gérée par l'appui de la touche Echap
+      on récupère donc le temps de la pause (si pause il y a eu) ici.
+    -}
+    tpause <- case evt of
       Quit                     -> exitWith ExitSuccess -- Gestion de la fermeture (appui sur 'q').
       KeyDown (Keysym _ _ 'q') -> exitWith ExitSuccess -- Gestion de la fermeture (clic sur la croix).
-      KeyDown (Keysym sym _ _) -> do
-        tpause <- manageKeyDown sym
-        return ()
-      KeyUp (Keysym sym _ _)   -> manageKeyUp sym
-      _                        -> return ()
+      KeyDown (Keysym sym _ _) -> manageKeyDown sym
+      KeyUp (Keysym sym _ _)   -> do
+        manageKeyUp sym
+        return 0
+      _                        -> return 0
     
     -- Modifie les coordonnées en fonction de la vitesse (ralenti si appuis sur Shift/Majuscule).
     mod <- getModState
     if KeyModLeftShift `elem` mod
     then modifyIORef' playerRef (setPosition 1)
     else modifyIORef' playerRef (setPosition 3)
-    
+
+    -- Ajoute le temps de la pause et le temps de début du niveau.
+    let t0' = addUTCTime tpause t0
+
     -- Affiche le personnage, attend 20ms, et boucle.
     t1 <- getCurrentTime
-    let t = truncate $ (diffUTCTime t1 t0) * 1000
+    let t = truncate $ (diffUTCTime t1 t0') * 1000
     
     -- Teste les collisions entre le cône de tir et les ennemis.
     player <- readIORef playerRef
@@ -181,7 +190,7 @@ loop t0 patts ennemies =
     -- Ne reboucle que si la hitbox du personnage est sauve.
     case playerBulletCollision (fromIntegral t) patts player of
       True  -> return (Dead)
-      False -> loop (addUTCTime tpause t0) (cleanBulletList t patts) new_ennemies
+      False -> loop t0' (cleanBulletList t patts) new_ennemies
 
     where
       {-
@@ -195,21 +204,20 @@ loop t0 patts ennemies =
       -}
       manageKeyDown :: SDLKey -> IO (NominalDiffTime)
       manageKeyDown sym = do
-        let tp = 0
-        case sym of
-          SDLK_UP     -> setDirUp True
-          SDLK_DOWN   -> setDirDown True
-          SDLK_LEFT   -> setDirLeft True
-          SDLK_RIGHT  -> setDirRight True
-          SDLK_w      -> do
-            playPlayerBullet           
-            setFiring True -- Le joueur est en train de tirer.
-          SDLK_x      -> playSpellCard
-          SDLK_ESCAPE -> do
-            tp <- getCurrentTime >>= gamePause -- Lance la pause
-            return ()
-          _           -> return ()
-        return tp
+        if sym == SDLK_ESCAPE
+        then getCurrentTime >>= gamePause -- Lance la pause
+        else do
+          case sym of
+            SDLK_UP     -> setDirUp True
+            SDLK_DOWN   -> setDirDown True
+            SDLK_LEFT   -> setDirLeft True
+            SDLK_RIGHT  -> setDirRight True
+            SDLK_w      -> do
+              playPlayerBullet           
+              setFiring True -- Le joueur est en train de tirer.
+            SDLK_x      -> playSpellCard
+            _           -> return ()
+          return 0
 
       -- L'utilisateur a relaché une touche.
       manageKeyUp sym =
@@ -223,7 +231,10 @@ loop t0 patts ennemies =
             setFiring False
           _          -> return ()
 
--- gère la pause pendant une partie
+{-
+  gère la pause pendant une partie
+  on quitte la pause à l'appui de n'importe quelle touche
+-}
 gamePause :: UTCTime -> IO (NominalDiffTime)
 gamePause t0 =
   do
@@ -232,4 +243,6 @@ gamePause t0 =
       KeyDown _ -> do
         t1 <- getCurrentTime
         return (diffUTCTime t1 t0)
-      _         -> gamePause t0
+      _         -> do
+        wait 20
+        gamePause t0
