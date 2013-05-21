@@ -45,6 +45,11 @@ import System.Exit
 import Data.IORef
 import Data.Time
 import System.IO.Unsafe
+
+-- Calcul le score actuel du joueur.
+totalScore :: Int -> Int -> Player -> Int
+totalScore graze ennemies (Player _ _ (x, y) _ b l) = 100 * (graze + ennemies) + 10000 * (l + b)
+
 -- Crée une partie.
 newGame :: Surface -> IO ()
 newGame scr =

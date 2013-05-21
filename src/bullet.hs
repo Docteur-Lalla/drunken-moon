@@ -160,3 +160,27 @@ playerBulletCollision t ((Simple fx fy fr sp _ _):xs) p@(Player _ _ (x, y) _ _ _
 
 	dist = sqrt $ (x' - xf) ^ 2 + (y' - yf) ^ 2
 	ret = dist < (r' + 5)
+
+-- Applique l'effet d'une bombe sur les projectiles présents.
+
+applyBomb :: Int -> [Pattern] -> [Pattern]
+applyBomb t (b@(Simple _ _ _ s _ _):tl)
+  | t < s     = b : applyBomb t tl
+  | otherwise = applyBomb t tl
+applyBomb t (_:tl) = applyBomb t tl
+
+-- Compte le nombre d'esquives proches (à 2 rayons près).
+
+grazeCount :: Float -> [Pattern] -> Player -> Int
+grazeCount t bl p = grazeCountAux 0 t bl p
+
+  where grazeCountAux :: Int -> Float -> [Pattern] -> Player -> Int
+        grazeCountAux acc t [] p = acc
+        grazeCountAux acc t ((Complex _ _ _):tl) p = grazeCountAux acc t tl p
+	grazeCountAux acc t (b@(Simple _ _ fr s _ _):tl) p
+	  | t < fromIntegral s     = grazeCountAux acc t tl p
+	  | dist t b p < 2.0 * fr t = grazeCountAux (acc + 1) t tl p
+	  | otherwise               = grazeCountAux acc t tl p
+	
+	dist t (Simple fx fy _ _ _ _) (Player _ _ (x, y) _ _ _) = sqrt add
+	  where add = (fx t - fromIntegral x) ^ 2 + (fy t + fromIntegral y) ^ 2

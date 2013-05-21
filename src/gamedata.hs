@@ -32,6 +32,7 @@ module GameData where
 
 import Data.IORef
 import System.IO.Unsafe
+import Data.List as List
 
 type TimeFunction = Float -> Float
 
@@ -91,6 +92,10 @@ killEnnemies :: [Ennemy] -> [Ennemy]
 killEnnemies []                    = []
 killEnnemies ((Ennemy _ _ _ 0):es) = killEnnemies es
 killEnnemies (e:es)                = e : killEnnemies es
+
+-- Score lié au nombre d'ennemis tués.
+ennemyScore :: [Ennemy] -> [Ennemy] -> Int
+ennemyScore startE actualE = List.length startE - List.length actualE
 
 -- Définition d'une référence représentant le joueur.
 playerRef :: IORef Player
