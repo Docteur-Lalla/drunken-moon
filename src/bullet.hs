@@ -141,7 +141,7 @@ cleanBulletList t patt = cleanBulletList' t [] patt
 -- Test de collision entre les projectiles et le joueur.
 playerBulletCollision :: Int -> [Pattern] -> Player -> Bool
 playerBulletCollision _ [] _                                                     = False
-playerBulletCollision t ((Simple fx fy fr sp _ _):xs) p@(Player _ _ (x, y) _ _ _)
+playerBulletCollision t ((Simple fx fy fr sp _ _):xs) p@(Player _ _ _ (x, y) _ _ _)
   | t < fromIntegral sp = playerBulletCollision t xs p
   | otherwise = if ret then True else playerBulletCollision t xs p
 
@@ -164,6 +164,7 @@ playerBulletCollision t ((Simple fx fy fr sp _ _):xs) p@(Player _ _ (x, y) _ _ _
 -- Applique l'effet d'une bombe sur les projectiles présents.
 
 applyBomb :: Int -> [Pattern] -> [Pattern]
+applyBomb _ [] = []
 applyBomb t (b@(Simple _ _ _ s _ _):tl)
   | t < s     = b : applyBomb t tl
   | otherwise = applyBomb t tl
@@ -182,5 +183,5 @@ grazeCount t bl p = grazeCountAux 0 t bl p
 	  | dist t b p < 2.0 * fr t = grazeCountAux (acc + 1) t tl p
 	  | otherwise               = grazeCountAux acc t tl p
 	
-	dist t (Simple fx fy _ _ _ _) (Player _ _ (x, y) _ _ _) = sqrt add
+	dist t (Simple fx fy _ _ _ _) (Player _ _ _ (x, y) _ _ _) = sqrt add
 	  where add = (fx t - fromIntegral x) ^ 2 + (fy t + fromIntegral y) ^ 2

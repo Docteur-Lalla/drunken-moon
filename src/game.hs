@@ -32,6 +32,7 @@ module Game (newGame) where
 
 import Score (writeScore)
 import Resources
+import Font
 import Music
 import Time
 import GameData as GD
@@ -49,7 +50,7 @@ import System.IO.Unsafe
 
 -- Calcul le score actuel du joueur.
 totalScore :: Int -> Int -> Player -> Int
-totalScore graze ennemies (Player _ _ (x, y) _ b l) = 100 * (graze + ennemies) + 10000 * (l + b)
+totalScore graze ennemies (Player _ _ _ (x, y) _ b l) = 100 * (graze + ennemies) + 10000 * (l + b)
 
 -- Crée une partie.
 newGame :: Surface -> IO ()
@@ -65,7 +66,7 @@ displayPlayer :: Surface -> IO ()
 displayPlayer scr =
   do
     -- Récupère les coordonnées.
-    p@(Player _ _ (x, y) _ _ _) <- readIORef playerRef
+    p@(Player _ _ _ (x, y) _ _ _) <- readIORef playerRef
     
     -- Affiche le personnage et rafraichit l'image.
     SDL.fillRect scr (Just (Rect 0 0 500 640)) (Pixel 0x000000)
@@ -77,7 +78,7 @@ displayPlayer scr =
       else displayFire scr p
 
 displayFire :: Surface -> Player -> IO ()
-displayFire scr p@(Player _ _ (x,y) _ _ _) =
+displayFire scr p@(Player _ _ _ (x,y) _ _ _) =
   do
     fire <- getImage "fire"
     let posx = x - 200
@@ -226,24 +227,39 @@ loop t0 patts ennemies =
     -- Modifie les coordonnées en fonction de la vitesse (ralenti si appuis sur Shift/Majuscule).
     mod <- getModState
     if KeyModLeftShift `elem` mod
-    then modifyIORef' playerRef (setPosition 1)
-    else modifyIORef' playerRef (setPosition 3)
+    then modifyIORef' playerRef (setPosition 3)
+    else modifyIORef' playerRef (setPosition 6)
 
     -- Ajoute le temps de la pause et le temps de début du niveau.
     let t0' = addUTCTime tpause t0
-
+    
     -- Affiche le personnage, attend 20ms, et boucle.
     t1 <- getCurrentTime
     let t = truncate $ (diffUTCTime t1 t0') * 1000
-    
+
     -- Teste les collisions entre le cône de tir et les ennemis.
     player <- readIORef playerRef
     let new_ennemies = if isFiring player
                          then killEnnemies $ manageFireEnnemyCollision player (fromIntegral t) ennemies
                          else ennemies
+    
+    new_patterns <- if isBombing player
+                    then do
+                      setBombing False
+                      if (bombs player) > 0
+                        then do
+                          playSpellCard
+                          changeBombAmount ((bombs player) - 1)
+                          return (applyBomb t patts)
+                        else return patts
+                    else return patts
 
     scr <- SDL.getVideoSurface
-
+    
+    -- Affichage du HUD (pas encore ici)
+    --fonte <- vera 8
+    --renderRightText fonte (show totalScore () () player) white scr (500, 600)
+    
     -- Affichage du personnage, des projectiles et mise à jour de l'écran.
     displayPlayer scr
     displayBullets scr t patts
@@ -255,7 +271,7 @@ loop t0 patts ennemies =
     -- Ne reboucle que si la hitbox du personnage est sauve.
     case playerBulletCollision (fromIntegral t) patts player of
       True  -> return (Dead)
-      False -> loop t0' (cleanBulletList t patts) new_ennemies
+      False -> loop t0' (cleanBulletList t new_patterns) new_ennemies
 
     where
       {-
@@ -278,9 +294,9 @@ loop t0 patts ennemies =
             SDLK_LEFT   -> setDirLeft True
             SDLK_RIGHT  -> setDirRight True
             SDLK_w      -> do
-              playPlayerBullet           
+              playPlayerBullet
               setFiring True -- Le joueur est en train de tirer.
-            SDLK_x      -> playSpellCard
+            SDLK_x      -> setBombing True
             _           -> return ()
           return 0
 

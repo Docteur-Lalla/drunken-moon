@@ -80,3 +80,12 @@ renderAlignedText f (s:ss) c scr (x, y) step =
    renderAlignedText f ss c scr (x, new'y h) step
    
    where new'y h = y + h + step -- position + pas + taille du texte.
+
+renderRightText :: Font -> String -> Color -> Surface -> (Int, Int) -> IO ()
+renderRightText f str c scr (x, y) =
+  do
+    (w, _) <- TTF.textSize f str
+    text <- TTF.tryRenderTextBlended f str c
+    displaySurface text scr (x - w) y
+
+    return ()

@@ -37,12 +37,13 @@ import Data.List as List
 type TimeFunction = Float -> Float
 
 -- Le joueur est représenté par sa position, la direction de son déplacement, ses vies, ses bombes et s'il tire.
-data Player = Player { isFiring :: Bool
-                      ,dir      :: (Bool, Bool, Bool, Bool)
-                      ,pos      :: (Int, Int)
-                      ,power    :: Int
-                      ,bombs    :: Int
-                      ,lives    :: Int 
+data Player = Player { isFiring  :: Bool
+                      ,isBombing :: Bool
+                      ,dir       :: (Bool, Bool, Bool, Bool)
+                      ,pos       :: (Int, Int)
+                      ,power     :: Int
+                      ,bombs     :: Int
+                      ,lives     :: Int 
                      }
 
 -- Un ennemi est représenté par sa position dans le temps, son sprite et sa vie.
@@ -54,14 +55,14 @@ data Ennemy = Ennemy { pos_x  :: TimeFunction
 
 -- Droite symbolisant le côté gauche du cône de tir du joueur.
 firingFunction :: Player -> Float -> Maybe Float
-firingFunction (Player _ _ (x,y) _ _ _) = \t -> if t < fy then Just (3.0 * t + fx) else Nothing
+firingFunction (Player _ _ _ (x,y) _ _ _) = \t -> if t < fy then Just (3.0 * t + fx) else Nothing
 
   where fx = fromIntegral x
         fy = fromIntegral y
 
 -- Droite symbolisant le côté droit du cône de tir du joueur.
 reversedFiringFunction :: Player -> Float -> Maybe Float
-reversedFiringFunction (Player _ _ (x,y) _ _ _) = \t -> if t < fy then Just (500 - fx - 3.0 * t) else Nothing
+reversedFiringFunction (Player _ _ _ (x,y) _ _ _) = \t -> if t < fy then Just (500 - fx - 3.0 * t) else Nothing
 
   where fx = fromIntegral x
         fy = fromIntegral y
@@ -99,19 +100,19 @@ ennemyScore startE actualE = List.length startE - List.length actualE
 
 -- Définition d'une référence représentant le joueur.
 playerRef :: IORef Player
-playerRef = unsafePerformIO $ newIORef (Player False (False, False, False, False) (250, 350) 0 0 0)
+playerRef = unsafePerformIO $ newIORef (Player False False (False, False, False, False) (250, 350) 0 3 0)
 
 -- Fonction recréant un joueur tel qu'il est au démarrage du jeu.
 resetPlayer :: IO ()
 resetPlayer = modifyIORef' playerRef reset
-  where reset pl = (Player False (False, False, False, False) (250, 350) 0 0 0)
+  where reset pl = (Player False False (False, False, False, False) (250, 350) 0 3 0)
 
 -- Donnée définissant les directions.
 data Direction = UP | DOWN | LEFT | RIGHT deriving (Eq)
 
 -- Fonction qui modifie le tuple 'dir' du joueur en fonction de la direction et l'état choisi.
 setDirection :: Direction -> Bool -> Player -> Player
-setDirection dir bool (Player e f g h i j) = Player e (screenCollisions g (newDirs dir bool f)) g h i j
+setDirection dir bool (Player e z f g h i j) = Player e z (screenCollisions g (newDirs dir bool f)) g h i j
   where
     newDirs dir bool (a, b, c, d) =
       case dir of
@@ -141,12 +142,20 @@ setDirLeft v = modifyIORef' playerRef (setDirection LEFT v)
 setDirRight :: Bool -> IO ()
 setDirRight v = modifyIORef' playerRef (setDirection RIGHT v)
 
+-- Fait tirer/lancer une bombe au personnage
 setFiring :: Bool -> IO ()
-setFiring v = modifyIORef' playerRef (\(Player _ b c d e f) -> (Player v b c d e f))
+setFiring v = modifyIORef' playerRef (\(Player _ a b c d e f) -> (Player v a b c d e f))
+
+setBombing :: Bool -> IO ()
+setBombing v = modifyIORef' playerRef (\(Player a _ b c d e f) -> (Player a v b c d e f))
+
+-- change le montant de bombes du joueur
+changeBombAmount :: Int -> IO ()
+changeBombAmount v = modifyIORef' playerRef (\(Player a b c d e _ f) -> (Player a b c d e v f))
 
 -- Fonction calculant les coordonnées du joueur en fonction de ses coordonnées actuelles et de sa direction.
 setPosition :: Int -> Player -> Player
-setPosition v pl@(Player q r@(h, b, g, d) (ox, oy) m o p) = Player q (screenCollisions newpos r) newpos m o p
+setPosition v pl@(Player q z r@(h, b, g, d) (ox, oy) m o p) = Player q z (screenCollisions newpos r) newpos m o p
   where
     y = if (h == b) then 0 else if h then (-v) else v
     x = if (g == d) then 0 else if g then (-v) else v
