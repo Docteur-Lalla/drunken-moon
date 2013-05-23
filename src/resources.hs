@@ -142,7 +142,9 @@ initEnvironment =
     addImage "ball" "rc/images/ball.png"
     addImage "yinyang" "rc/images/yinyang.png"
     addImage "player" "rc/images/sprite_suika.png"
-	
+    addImage "bomb_icon" "rc/images/star.png"
+    addImage "heart_icon" "rc/images/heart.png"
+
     -- Ajoute les sons
     addSound "select" "rc/sounds/select00.wav"
     addSound "ok" "rc/sounds/ok00.wav"

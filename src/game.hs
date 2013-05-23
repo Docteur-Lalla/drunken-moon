@@ -46,6 +46,7 @@ import System.Exit
 import Data.IORef
 import Data.Time
 import Data.Word
+import Data.Maybe
 import System.IO.Unsafe
 
 -- Calcul le score actuel du joueur.
@@ -97,6 +98,47 @@ displayFire scr p@(Player _ _ _ (x,y) _ _ _) =
     Resources.displaySurface fire scr posx y
     return ()
 
+-- Affiche le score du joueur, ses vies et ses bombes
+displayHUD :: Int -> Int -> Player -> Surface -> IO ()
+displayHUD g e p scr =
+  do    
+    fonte <- veramono 12
+    renderRightText fonte (show $ totalScore g e p) white scr (495, 400)
+
+    displayLives (lives p) scr
+    displayBombs (bombs p) scr
+
+displayLives :: Int -> Surface -> IO ()
+displayLives 0 _ = return ()
+displayLives l scr =
+  do
+    coeur <- getImage "heart_icon"
+
+    -- Recupère la largeur de l'image
+    (Rect _ _ w _) <- getClipRect (fromJust coeur)
+
+    -- affiche les coeurs à la suite avec un décalage de 5px entre chaque coeur
+    displaySurface coeur scr (x' w l) y'
+
+    displayLives (l-1) scr
+  where
+    x' w l = 5 + (5 + w) * (l - 1)
+    y' = 400
+
+displayBombs :: Int -> Surface -> IO ()
+displayBombs 0 _ = return ()
+displayBombs b scr =
+  do
+    bombe <- getImage "bomb_icon"
+    (Rect _ _ w h) <- getClipRect (fromJust bombe)
+
+    displaySurface bombe scr (x' w b) (y' h)
+    displayBombs (b - 1) scr  
+  
+  where
+    x' w b = 5 + (5 + w) * (b - 1)
+    y' h = 400 + 5 + h
+
 data GameState
   = Finished
   | Dead
@@ -139,7 +181,7 @@ generalLoop scr lvl state =
         fadeIn scr
         LV1.back_music
         t0 <- getCurrentTime
-        st <- loop t0 LV1.run LV1.ennemies
+        st <- loop t0 LV1.run LV1.ennemies 0 0
         generalLoop scr lvl st
     
     -- next va noircir l'écran, pusi lancer le stage suivant
@@ -215,8 +257,8 @@ fadeOut scr =  fadeAux 0
         screenRect = (Just (Rect 0 0 500 640))
 
 -- Boucle gérant les contrôles du joueur.
-loop :: UTCTime -> [Pattern] -> [Ennemy] -> IO (GameState)
-loop t0 patts ennemies =
+loop :: UTCTime -> [Pattern] -> [Ennemy] -> Int -> Int -> IO (GameState)
+loop t0 patts ennemies graze escore =
   do 
     evt <- SDL.pollEvent
     
@@ -264,17 +306,20 @@ loop t0 patts ennemies =
                           return (applyBomb t patts)
                         else return patts
                     else return patts
+    
+    let new_graze = grazeCount (fromIntegral t / 1000.0) new_patterns player + graze
+    let new_escore = (ennemyScore ennemies new_ennemies) + escore
 
     scr <- SDL.getVideoSurface
     
-    -- Affichage du HUD (pas encore ici)
-    --fonte <- vera 8
-    --renderRightText fonte (show totalScore () () player) white scr (500, 600)
-    
+   
     -- Affichage du personnage, des projectiles et mise à jour de l'écran.
     displayPlayer scr
     displayEnnemies (fromIntegral t) scr new_ennemies
     displayBullets scr t patts
+    
+    displayHUD new_graze new_escore player scr
+
     SDL.flip scr
 
     -- Pause stratégique.
@@ -283,7 +328,7 @@ loop t0 patts ennemies =
     -- Ne reboucle que si la hitbox du personnage est sauve.
     case playerBulletCollision (fromIntegral t) patts player of
       True  -> return (Dead)
-      False -> loop t0' (cleanBulletList t new_patterns) new_ennemies
+      False -> loop t0' (cleanBulletList t new_patterns) new_ennemies new_graze new_escore
 
     where
       {-
