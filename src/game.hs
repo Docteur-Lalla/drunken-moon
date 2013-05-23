@@ -332,7 +332,13 @@ loop t0 patts ennemies graze escore =
 
     -- Ne reboucle que si la hitbox du personnage est sauve.
     case playerBulletCollision (fromIntegral t) patts player of
-      True  -> return (Dead)
+      True  -> do
+        die
+        changeBombAmount 3
+        playPlayerDie
+        if (lives player) > 0
+          then loop t0' (cleanBulletList t new_patterns) new_ennemies new_graze new_escore
+          else return (Dead)
       False -> loop t0' (cleanBulletList t new_patterns) new_ennemies new_graze new_escore
 
     where

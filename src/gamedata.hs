@@ -88,12 +88,12 @@ ennemyScore startE actualE = List.length startE - List.length actualE
 
 -- Définition d'une référence représentant le joueur.
 playerRef :: IORef Player
-playerRef = unsafePerformIO $ newIORef (Player False False (False, False, False, False) (250, 350) 0 3 0)
+playerRef = unsafePerformIO $ newIORef (Player False False (False, False, False, False) (250, 350) 0 3 3)
 
 -- Fonction recréant un joueur tel qu'il est au démarrage du jeu.
 resetPlayer :: IO ()
 resetPlayer = modifyIORef' playerRef reset
-  where reset pl = (Player False False (False, False, False, False) (250, 350) 0 3 0)
+  where reset pl = (Player False False (False, False, False, False) (250, 350) 0 3 3)
 
 -- Donnée définissant les directions.
 data Direction = UP | DOWN | LEFT | RIGHT deriving (Eq)
@@ -140,6 +140,10 @@ setBombing v = modifyIORef' playerRef (\(Player a _ b c d e f) -> (Player a v b 
 -- change le montant de bombes du joueur
 changeBombAmount :: Int -> IO ()
 changeBombAmount v = modifyIORef' playerRef (\(Player a b c d e _ f) -> (Player a b c d e v f))
+
+-- enlève une vie au joueur
+die :: IO ()
+die = modifyIORef' playerRef (\(Player a b c d e f g) -> (Player a b c d e f (g-1)))
 
 -- Fonction calculant les coordonnées du joueur en fonction de ses coordonnées actuelles et de sa direction.
 setPosition :: Int -> Player -> Player
