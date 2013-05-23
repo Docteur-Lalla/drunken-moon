@@ -28,9 +28,10 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  -}
 
-module Reimu(run, back_music) where
+module Reimu(run, ennemies, back_music) where
 
 import Bullet
+import GameData
 import Music
 
 vline n = Complex (map ball [-600, -300..600]) nullTimeFunction nullTimeFunction
@@ -58,4 +59,7 @@ fall f = Complex (map balls [0, 100..20000]) nullTimeFunction nullTimeFunction
 
 run = bulletList (Complex patt nullTimeFunction nullTimeFunction)
       where patt = [(fall cos, 0), (grid 15000, 0), (fall cos, 21000), (fall sin, 21000)]
-back_music = startBGM "reimu_theme" 
+
+ennemies = [(Ennemy (\t -> 250) (\t -> 100) "yinyang" 5)]
+
+back_music = startBGM "reimu_theme"

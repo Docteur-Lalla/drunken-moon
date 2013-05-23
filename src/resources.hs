@@ -140,7 +140,7 @@ initEnvironment =
     addImage "suika" "rc/images/Suika.jpeg"
     addImage "sun" "rc/images/sun.jpg"
     addImage "ball" "rc/images/ball.png"
-    addImage "yinyang" "rc/images/yingyang.png"
+    addImage "yinyang" "rc/images/yinyang.png"
     addImage "player" "rc/images/sprite_suika.png"
 	
     -- Ajoute les sons

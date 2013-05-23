@@ -77,6 +77,17 @@ displayPlayer scr =
       then return ()
       else displayFire scr p
 
+displayEnnemies :: Float -> Surface -> [Ennemy] -> IO ()
+displayEnnemies _ _   []                         = return ()
+displayEnnemies t scr ((Ennemy fx fy skin _):es) =
+  do
+    sprite <- getImage skin
+    let x = truncate $ fx t
+    let y = truncate $ fy t
+
+    Resources.displaySurface sprite scr x y
+    displayEnnemies t scr es
+
 displayFire :: Surface -> Player -> IO ()
 displayFire scr p@(Player _ _ _ (x,y) _ _ _) =
   do
@@ -128,7 +139,7 @@ generalLoop scr lvl state =
         fadeIn scr
         LV1.back_music
         t0 <- getCurrentTime
-        st <- loop t0 LV1.run []
+        st <- loop t0 LV1.run LV1.ennemies
         generalLoop scr lvl st
     
     -- next va noircir l'écran, pusi lancer le stage suivant
@@ -262,6 +273,7 @@ loop t0 patts ennemies =
     
     -- Affichage du personnage, des projectiles et mise à jour de l'écran.
     displayPlayer scr
+    displayEnnemies (fromIntegral t) scr new_ennemies
     displayBullets scr t patts
     SDL.flip scr
 

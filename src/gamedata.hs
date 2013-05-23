@@ -53,32 +53,19 @@ data Ennemy = Ennemy { pos_x  :: TimeFunction
 		      ,life   :: Int
 		     }
 
--- Droite symbolisant le côté gauche du cône de tir du joueur.
-firingFunction :: Player -> Float -> Maybe Float
-firingFunction (Player _ _ _ (x,y) _ _ _) = \t -> if t < fy then Just (3.0 * t + fx) else Nothing
-
-  where fx = fromIntegral x
-        fy = fromIntegral y
-
--- Droite symbolisant le côté droit du cône de tir du joueur.
-reversedFiringFunction :: Player -> Float -> Maybe Float
-reversedFiringFunction (Player _ _ _ (x,y) _ _ _) = \t -> if t < fy then Just (500 - fx - 3.0 * t) else Nothing
-
-  where fx = fromIntegral x
-        fy = fromIntegral y
-
--- Prédicat vérifiant si un ennemi placé en (ex, ey) est touché par le tir.
+-- Fonction gérant la collision entre un ennemi et le tir du joueur.
 collisionFireEnnemy :: Player -> Float -> Ennemy -> Bool
-collisionFireEnnemy player t (Ennemy ex ey _ _) =
-  case (test2 (ex t) (reversedFiringFunction player (ey t)), test (firingFunction player (ey t)) (ex t)) of
-    (True, True) -> True
-    (_, _)       -> False
+collisionFireEnnemy pl@(Player _ _ _ (x, y) _ _ _) t (Ennemy ex ey _ _) =
+  if fey > fy
+    then False
+    else collision (fx, fy) (fex, fey)
+  
+  where (fx, fy)  = (fromIntegral x, fromIntegral y)
+	(fex, fey) = (ex t, ey t)
 
-  where test Nothing  _  = False
-        test (Just x) ex = x < ex
-
-	test2 _ Nothing   = False
-	test2 ex (Just x) = x > ex
+	collision (fx, fy) (ex, ey) = cos (pi / 6.0) > a / b
+	  where b = sqrt $ (ex + fex) ^ 2 + (ey + fey) ^ 2
+	        a = fy - fey
 
 -- Vérifie si un ennemi est touché et retranche 1 à sa vie.
 manageFireEnnemyCollision :: Player -> Float -> [Ennemy] -> [Ennemy]
@@ -90,9 +77,10 @@ manageFireEnnemyCollision pl t (e@(Ennemy x y s l):es) =
 
 -- Elimine les ennemis ayant 0 de vie.
 killEnnemies :: [Ennemy] -> [Ennemy]
-killEnnemies []                    = []
-killEnnemies ((Ennemy _ _ _ 0):es) = killEnnemies es
-killEnnemies (e:es)                = e : killEnnemies es
+killEnnemies [] = []
+killEnnemies (e@(Ennemy _ _ _ life):es)
+  | life < 1  = killEnnemies es
+  | otherwise = e : killEnnemies es
 
 -- Score lié au nombre d'ennemis tués.
 ennemyScore :: [Ennemy] -> [Ennemy] -> Int
