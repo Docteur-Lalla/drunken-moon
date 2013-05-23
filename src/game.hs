@@ -101,13 +101,15 @@ displayFire scr p@(Player _ _ _ (x,y) _ _ _) =
 -- Affiche le score du joueur, ses vies et ses bombes
 displayHUD :: Int -> Int -> Player -> Surface -> IO ()
 displayHUD g e p scr =
-  do    
+  do
+    --Affiche le score aligné à droite
     fonte <- veramono 12
     renderRightText fonte (show $ totalScore g e p) white scr (495, 400)
 
     displayLives (lives p) scr
     displayBombs (bombs p) scr
 
+-- Affiche les vies sous forme de petits coeurs
 displayLives :: Int -> Surface -> IO ()
 displayLives 0 _ = return ()
 displayLives l scr =
@@ -125,6 +127,7 @@ displayLives l scr =
     x' w l = 5 + (5 + w) * (l - 1)
     y' = 400
 
+-- Affiche les bombes sous forme de petites etoiles
 displayBombs :: Int -> Surface -> IO ()
 displayBombs 0 _ = return ()
 displayBombs b scr =
@@ -296,6 +299,7 @@ loop t0 patts ennemies graze escore =
                          then killEnnemies $ manageFireEnnemyCollision player (fromIntegral t) ennemies
                          else ennemies
     
+    -- Teste le fait qu'on utilise une bombe ou non, et détruit les bullets pris dans la bombe
     new_patterns <- if isBombing player
                     then do
                       setBombing False
@@ -307,13 +311,14 @@ loop t0 patts ennemies graze escore =
                         else return patts
                     else return patts
     
+    -- Actualise le score des enemis tués et le score de graze
     let new_graze = grazeCount (fromIntegral t / 1000.0) new_patterns player + graze
     let new_escore = (ennemyScore ennemies new_ennemies) + escore
 
     scr <- SDL.getVideoSurface
     
    
-    -- Affichage du personnage, des projectiles et mise à jour de l'écran.
+    -- Affichage du personnage, des projectiles, du HUD et mise à jour de l'écran.
     displayPlayer scr
     displayEnnemies (fromIntegral t) scr new_ennemies
     displayBullets scr t patts

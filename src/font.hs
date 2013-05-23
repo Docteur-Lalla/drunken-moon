@@ -35,7 +35,7 @@ import Graphics.UI.SDL as SDL
 import Graphics.UI.SDL.TTF as TTF
 
 fontDir :: String
-fontDir = "/usr/share/fonts/TTF/"
+fontDir = "rc/fonts/"
 
 black = Color 0 0 0
 white = Color 0xFF 0xFF 0xFF
