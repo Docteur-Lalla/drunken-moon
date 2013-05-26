@@ -35,6 +35,7 @@ import Resources
 import Font
 import Music
 import Time
+import Score
 import GameData as GD
 import Bullet
 import Reimu as LV1
@@ -58,9 +59,12 @@ newGame :: Surface -> IO ()
 newGame scr =
   do
     enableKeyRepeat 0 0
-
-    generalLoop scr 1 StartStage
-    return ()
+    
+    resultat <- generalLoop scr 1 0 StartStage
+    case resultat of
+      Dead s     -> writeScore scr s
+      Finished s -> writeScore scr s
+      _          -> return ()
 
 -- Affiche le personnage à l'écran et son cône de tir si celui-ci est nécessaire.
 displayPlayer :: Surface -> IO ()
@@ -104,7 +108,7 @@ displayHUD g e p scr =
   do
     --Affiche le score aligné à droite
     fonte <- veramono 12
-    renderRightText fonte (show $ totalScore g e p) white scr (495, 400)
+    renderRightText fonte (show $ totalScore g e p) white scr (495, 500)
 
     displayLives (lives p) scr
     displayBombs (bombs p) scr
@@ -143,55 +147,56 @@ displayBombs b scr =
     y' h = 400 + 5 + h
 
 data GameState
-  = Finished
-  | Dead
-  -- | Leave Pourquoi pas un abandon de la partie ?
+  = Finished Int
+  | Dead Int
+  -- | Leave -- (Eventuel abandon de la partie)
   | StartStage
-  | StageComplete
+  | StageComplete Int
 
 -- Variable définissant le dernier niveau ... pour l'instant 1 ...
 lastLvl = 1
 
 -- Boucle générale, gère les différentes étapes du jeu (fadein/out entre les stages, mort, fin du jeu, abandon)
-generalLoop :: Surface -> Int -> GameState -> IO (GameState)
-generalLoop scr lvl state =
+generalLoop :: Surface -> Int -> Int -> GameState -> IO (GameState)
+generalLoop scr lvl s state =
   do
     
     {-
       Agis en fonction de l'état 'state':
         - StartStage -> lance le prochain niveau (lvl définit quel niveau lancer)
         - StageComplete -> quand le niveau est fini, on test si c'était le dernier
-          si oui, on a fini le jeu sinon on lance le prochain stage
-        - Finished/Dead/Leave -> Fin du jeu, soit on l'a fini, soit on est mort, soit on a abandonné 
+          si oui, on a fini le jeu sinon on lance le prochain stage, en ajoutant au score
+          le score effectué pendant
+        - Finished/Dead -> Fin du jeu, soit on l'a fini, soit on est mort 
           (retourne à newGame, qui va agir en fonction de la façon dont le jeu s'est terminé)
     -}
     
     case state of
-      StartStage    -> start lvl
-      StageComplete -> if lvl == lastLvl 
-                       then return Finished
-                       else next lvl
-      x             -> do
-                         startBGM "main_theme"
-                         fadeOut scr
-                         return x
+      StartStage        -> start lvl s
+      StageComplete score -> if lvl == lastLvl 
+                           then return (Finished score)
+                           else next lvl (s+score)
+      Dead score        -> return (Dead score)
+      x                 -> do
+                             startBGM "main_theme"
+                             fadeOut scr
+                             return x
        
   where
     -- start effectue un fondu en faisant apparaitre le niveau, puis lance loop (le niveau en lui même)
-    start lvl =
+    start lvl score =
       do
-      
         fadeIn scr
         LV1.back_music
         t0 <- getCurrentTime
         st <- loop t0 LV1.run LV1.ennemies 0 0
-        generalLoop scr lvl st
+        generalLoop scr lvl score st
     
     -- next va noircir l'écran, pusi lancer le stage suivant
-    next lvl =
+    next lvl score =
       do
         fadeOut scr
-        generalLoop scr (lvl+1) StartStage
+        generalLoop scr (lvl+1) score StartStage
 
 -- Fonctions de fadeIn/fadeOut de l'écran entre chaque niveau
 -- fadeIn -> effectue un fondu faisant apparaitre le niveau
@@ -338,7 +343,7 @@ loop t0 patts ennemies graze escore =
         playPlayerDie
         if (lives player) > 0
           then loop t0' (cleanBulletList t new_patterns) new_ennemies new_graze new_escore
-          else return (Dead)
+          else return $ Dead (totalScore new_graze new_escore player)
       False -> loop t0' (cleanBulletList t new_patterns) new_ennemies new_graze new_escore
 
     where
